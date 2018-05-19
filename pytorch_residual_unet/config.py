@@ -20,8 +20,8 @@ class Configuration(metaclass=Singleton):
             'instance'}. Default: 'instance'
         activ (str): The type of non-linear activation; choices {'relu',
             'leaky_relu'}. Default: 'leaky_relu'
-        leaky_relu_alpha (float): Alpha (negtive slope) of leaky ReLU
-            activation. Default: 0.1
+        activ_para (dict): The parameters of activation. See torch.nn
+            Activations for more details
         dropout_rate (float): The rate of dropout. Default: 0.2
 
     """
@@ -38,8 +38,12 @@ class Configuration(metaclass=Singleton):
         self.kernel_init = 'kaiming_normal'
         self.norm = 'instance'
         self.activ = 'leaky_relu'
-        self.leaky_relu_alpha = 0.1
+        self.activ_para = dict(negative_slope=0.1)
         self.dropout_rate = 0.2
+        self.max_channels = 512
+        self.upsample_mode == 'nearest'
+        self.pool = 'max'
+        self.global_pool = 'average'
         if 'config_path' in kwargs and os.path.isfile(kwargs['config_path']):
             self._load_config(kwargs['config_path'])
 
