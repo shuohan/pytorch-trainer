@@ -41,7 +41,7 @@ class Configuration(metaclass=Singleton):
         self.activ_para = dict(negative_slope=0.1)
         self.dropout_rate = 0.2
         self.max_channels = 512
-        self.upsample_mode == 'nearest'
+        self.upsample_mode = 'nearest'
         self.pool = 'max'
         self.global_pool = 'average'
         if 'config_path' in kwargs and os.path.isfile(kwargs['config_path']):

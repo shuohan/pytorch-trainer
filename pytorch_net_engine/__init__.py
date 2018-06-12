@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from config import Configuration
+from .config import Configuration

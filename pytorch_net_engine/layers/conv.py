@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from torch.nn import Conv2d, Conv3d
+from torch.nn import Conv2d, Conv3d, ConvTranspose2d, ConvTranspose3d
 
 from ..config import Configuration
 

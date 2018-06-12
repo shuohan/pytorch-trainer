@@ -40,7 +40,7 @@ class GlobalPool(AdaptivePool):
 
 class Upsample(Upsample_):
     """Customized Upsample"""
-    def __init__(self, size, scale_factor):
+    def __init__(self, size=None, scale_factor=None):
         if config.upsample_mode == 'linear':
             if config.num_dims == 2:
                 mode = 'bilinear'

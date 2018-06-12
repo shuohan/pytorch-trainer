@@ -4,7 +4,7 @@ from torch.nn import Module
 
 from ..layers import ProjConv
 from ..blocks import EncodingBlock as EB
-from ..blocks import DecodingBloc as DB
+from ..blocks import DecodingBlock as DB
 from ..blocks import TransDownBlock as TD
 from ..blocks import TransUpBlock as TU
 from ..config import Configuration
@@ -32,7 +32,7 @@ class UNet(Module):
         """
         super().__init__()
         self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.out_channels = out_classes
         self.num_trans_down = num_trans_down
 
         # encoding/contracting
@@ -48,7 +48,7 @@ class UNet(Module):
         for i in range(num_trans_down):
             shortcut_ind = num_trans_down - i - 1
             out_channels = getattr(self, 'eb%d'%shortcut_ind).out_channels
-            setattr(self, 'tu%d'%i, TU(in_features,out_channels))
+            setattr(self, 'tu%d'%i, TU(in_channels,out_channels))
             setattr(self, 'db%d'%i, DB(out_channels,out_channels,out_channels))
             in_channels = out_channels
         
