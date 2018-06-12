@@ -5,8 +5,7 @@ from torch.nn import Module
 from ..layers import ProjConv
 from ..blocks import EncodingBlock as EB
 from ..blocks import DecodingBlock as DB
-from ..blocks import TransDownBlock as TD
-from ..blocks import TransUpBlock as TU
+from ..layers import Pool, Upsample
 from ..config import Configuration
 
 
@@ -40,7 +39,7 @@ class UNet(Module):
         in_channels = input_conv_channels
         for i in range(num_trans_down):
             out_channels = self._calc_out_channels(in_channels)
-            setattr(self, 'td%d'%(i+1), TD(in_channels,in_channels))
+            setattr(self, 'down%d'%(i+1), Pool(2))
             setattr(self, 'eb%d'%(i+1), EB(in_channels,out_channels))
             in_channels = out_channels
 
@@ -48,7 +47,7 @@ class UNet(Module):
         for i in range(num_trans_down):
             shortcut_ind = num_trans_down - i - 1
             out_channels = getattr(self, 'eb%d'%shortcut_ind).out_channels
-            setattr(self, 'tu%d'%i, TU(in_channels,out_channels))
+            setattr(self, 'up%d'%i, Upsample(scale_factor=2))
             setattr(self, 'db%d'%i, DB(out_channels,out_channels,out_channels))
             in_channels = out_channels
         
@@ -77,9 +76,11 @@ class UNet(Module):
             output = getattr(self, 'eb%d'%i)(input)
             if i < num_trans_down:
                 shortcuts.append(output)
+                output = getattr(self, 'down%d'%i)(output)
 
         # decoding/expanding
         for i, shortcut in enumerate(shortcuts):
+            output = getattr(self, 'up%d'%i)(output, shortcut)
             output = getattr(self, 'db%d'%i)(output, shortcut)
 
         output = self.out(output)
