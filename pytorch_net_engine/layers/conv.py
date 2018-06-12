@@ -69,7 +69,7 @@ class TwoConvTranspose(ConvTranspose):
         super().__init__(in_channels, out_channels, 2, bias=False, **kwargs)
 
 
-class SmallConv(Conv):
+class ThreeConv(Conv):
     """Convolution with kernel_size == 3 and 'same' padding"""
     def __init__(self, in_channels, out_channels, **kwargs): 
         super().__init__(in_channels, out_channels, 3, padding=1, **kwargs)

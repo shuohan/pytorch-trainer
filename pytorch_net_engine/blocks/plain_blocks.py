@@ -3,8 +3,8 @@
 import torch
 from torch.nn import Module, Sequential
 
-from ..layers import SmallConv, Normalization, Activation, Pool, Dropout
-from ..layers import Upsample
+from ..layers import ProjConv, ThreeConv, Normalization, Activation, Pool
+from ..layers import Upsample, Dropout
 
 
 class PostActivConvBlock(Module):
@@ -26,7 +26,7 @@ class PostActivConvBlock(Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.conv = SmallConv(in_channels, out_channels, stride=stride)
+        self.conv = ThreeConv(in_channels, out_channels, stride=stride)
         self.norm = Normalization(out_channels)
         self.activ = Activation()
 
@@ -149,11 +149,13 @@ class TransUpBlock(Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.up = Upsample(scale_factor=2)
-        self.conv1 = PostActivConvBlock(in_channels, out_channels)
-        self.conv2 = PostActivConvBlock(out_channels, out_channels)
+        self.conv = ProjConv(in_channels, out_channels)
+        self.norm = Normalization(out_channels)
+        self.activ = Activation()
 
     def forward(self, input):
         output = self.up(input)
-        output = self.conv1(output)
-        output = self.conv2(output)
+        output = self.conv(output)
+        output = self.norm(output)
+        output = self.activ(output)
         return output
