@@ -3,7 +3,8 @@
 import torch
 from torch.nn import Module, Sequential
 
-from ..layers import SmallConv, Normalization, Activation, MaxPool, Dropout
+from ..layers import ProjConv, ThreeConv, Normalization, Activation, Pool
+from ..layers import Upsample, Dropout
 
 
 class PostActivConvBlock(Module):
@@ -25,8 +26,8 @@ class PostActivConvBlock(Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.conv = SmallConv(in_channels, out_channels, stride=stride)
-        self.norm = Normalization()
+        self.conv = ThreeConv(in_channels, out_channels, stride=stride)
+        self.norm = Normalization(out_channels)
         self.activ = Activation()
 
     def forward(self, input):
@@ -117,9 +118,9 @@ class TransDownBlock(Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.pool = MaxPool(2)
+        self.pool = Pool(2)
         self.conv1 = PostActivConvBlock(in_channels, out_channels)
-        self.conv2 = PostActivConvBlock(out_channels, out_inchannels)
+        self.conv2 = PostActivConvBlock(out_channels, out_channels)
 
     def forward(self, input):
         output = self.pool(input)
@@ -136,7 +137,7 @@ class TransUpBlock(Module):
         out_channels (int): The number of output channels/features
 
     """
-    def __init__(self, channels):
+    def __init__(self, in_channels, out_channels):
         """Initialize
 
         Args:
@@ -147,12 +148,14 @@ class TransUpBlock(Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.up = Upsampling(scale_factor=2)
-        self.conv1 = PostActivConvBlock(in_channels, out_channels)
-        self.conv2 = PostActivConvBlock(out_channels, out_channels)
+        self.up = Upsample(scale_factor=2)
+        self.conv = ProjConv(in_channels, out_channels)
+        self.norm = Normalization(out_channels)
+        self.activ = Activation()
 
     def forward(self, input):
         output = self.up(input)
-        output = self.conv1(output)
-        output = self.conv2(output)
+        output = self.conv(output)
+        output = self.norm(output)
+        output = self.activ(output)
         return output

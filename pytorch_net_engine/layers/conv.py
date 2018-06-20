@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from torch.nn import Conv2d, Conv3d
+from torch.nn import Conv2d, Conv3d, ConvTranspose2d, ConvTranspose3d
 
 from ..config import Configuration
 
@@ -69,7 +69,7 @@ class TwoConvTranspose(ConvTranspose):
         super().__init__(in_channels, out_channels, 2, bias=False, **kwargs)
 
 
-class SmallConv(Conv):
+class ThreeConv(Conv):
     """Convolution with kernel_size == 3 and 'same' padding"""
     def __init__(self, in_channels, out_channels, **kwargs): 
         super().__init__(in_channels, out_channels, 3, padding=1, **kwargs)

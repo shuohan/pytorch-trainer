@@ -3,7 +3,7 @@
 
 from torch.nn import Dropout3d, Dropout2d
 
-from .config import Configuration
+from ..config import Configuration
 
 
 config = Configuration()
