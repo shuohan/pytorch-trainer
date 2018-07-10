@@ -2,3 +2,4 @@
 
 from .plain_blocks import PostActivConvBlock, EncodingBlock, DecodingBlock
 from .plain_blocks import TransDownBlock, TransUpBlock
+from .residual_blocks import ResidualEncodingBlock
