@@ -8,11 +8,11 @@ scripts = glob('scripts/*')
 command = ['git', 'describe', '--tags']
 version = subprocess.check_output(command).decode().strip()
 
-setup(name='pytorch-nets',
+setup(name='pytorch-engine',
             version=version,
             description='PyTorch fully convolutional networks',
             author='Shuo Han',
             author_email='shan50@jhu.edu',
             scripts=scripts,
             install_requires=['torch', 'torchvision'],
-            packages=['pytorch_nets'])
+            packages=['pytorch_engine'])
