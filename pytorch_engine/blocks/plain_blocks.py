@@ -9,6 +9,8 @@ from ..layers import Upsample, Dropout
 
 class PostActivConvBlock(Module):
     """Convolution block with post activation
+
+    Convolution does not need bias term if followed by a nomalization
     
     Attributes: 
         in_channels (int): The number of input channels/features
@@ -26,7 +28,8 @@ class PostActivConvBlock(Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.conv = ThreeConv(in_channels, out_channels, stride=stride)
+        self.conv = ThreeConv(in_channels, out_channels, stride=stride,
+                              bias=False)
         self.norm = Normalization(out_channels)
         self.activ = Activation()
 
