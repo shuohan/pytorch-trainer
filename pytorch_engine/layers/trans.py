@@ -3,7 +3,6 @@
 from torch.nn import MaxPool2d, MaxPool3d, AvgPool2d, AvgPool3d
 from torch.nn import AdaptiveMaxPool2d, AdaptiveMaxPool3d
 from torch.nn import AdaptiveAvgPool2d, AdaptiveAvgPool3d
-from torch.nn import AdaptiveAvgPool2d, AdaptiveAvgPool3d
 from torch.nn import Upsample as Upsample_
 
 from ..config import Configuration
@@ -40,12 +39,12 @@ class GlobalPool(AdaptivePool):
 
 class Upsample(Upsample_):
     """Customized Upsample"""
-    def __init__(self, size=None, scale_factor=None):
+    def __init__(self, **kwargs) :
         if config.upsample_mode == 'linear':
             if config.num_dims == 2:
-                mode = 'bilinear'
+                kwargs['mode'] = 'bilinear'
             elif config.num_dims == 3:
-                mode = 'trilinear'
+                kwargs['mode'] = 'trilinear'
         elif config.upsample_mode == 'nearest':
-            mode = 'nearest'
-        super().__init__(size=size, scale_factor=scale_factor, mode=mode)
+            kwargs['mode'] = 'nearest'
+        super().__init__(**kwargs)
