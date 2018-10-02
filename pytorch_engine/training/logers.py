@@ -4,7 +4,39 @@ import os
 
 
 class Logger:
+    """Write training log
+
+    Write training loss/metrics into a file and validation loss/metric (if any)
+    to another file. If `log_val_all` is true, record the validation for each
+    image separately. In this case, write the validation in a "long form":
+
+        epoch,data,loss,metric1
+        1,image-001,0.1,0.1
+        1,image-002,0.1,0.1
+        2,image-001,0.1,0.1
+        2,image-002,0.1,0.1
+        3,image-001,0.1,0.1
+
+    Else record the mean loss/metrics across all validation data (same as
+    training):
+
+        epoch,loss,metric1
+        1,0.1,0.1
+        2,0.1,0.1
+        3,0.1,0.1
+
+    Attributes:
+
+        num_epochs (int): The total number of epochs
+        num_batches (int): The number of mini-batches in each epoch
+        decimals (int): The number of decimals of loss/metrics to print
+        filename (str): The path to the log file
+
+    """
     def __init__(self, num_epochs, num_batches, decimals=4, filename=None):
+        """Initialize
+
+        """
         self.num_epochs = num_epochs
         self.num_batches = num_batches
         self.decimals = decimals
@@ -13,7 +45,7 @@ class Logger:
         self._header = None
 
         dirname = os.path.dirname(self.filename)
-        if not os.path.isdir(dirname):
+        if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)
 
         if os.path.isfile(self.validation_filename):
