@@ -147,6 +147,8 @@ class SimpleTrainer(Trainer):
 
     def _train_epoch(self):
         for batch, (input, truth) in enumerate(self.train_loader):
+            input = input.float()
+            truth = truth.float()
             self._batch = batch + 1
             if self.use_gpu:
                 input = input.cuda()
@@ -166,6 +168,8 @@ class SimpleTrainer(Trainer):
     def _validate(self):
         with torch.no_grad():
             for input, truth in self.val_loader:
+                input = input.float()
+                truth = truth.float()
                 if self.use_gpu:
                     input = input.cuda()
                     truth = truth.cuda()
