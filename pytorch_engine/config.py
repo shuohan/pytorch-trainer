@@ -46,6 +46,7 @@ class Configuration(metaclass=Singleton):
         self.pool = 'max'
         self.global_pool = 'average'
         self.decimals = 4
+        self.metrics = list()
         if 'config_path' in kwargs and os.path.isfile(kwargs['config_path']):
             self._load_config(kwargs['config_path'])
 

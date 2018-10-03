@@ -17,15 +17,12 @@ class Printer(Observer):
 
     Attributes:
         trainer (Trainer): The trainer holding the training progeress
-        _e_pattern (str): The pattern of the epoch to print
-        _b_pattern (str): The pattern of the batch to print
 
     """
-    def __init__(self, trainer):
+    def __init__(self):
         """Initialize"""
-        self.trainer = trainer
-        self._e_pattern = self._calc_pattern('epoch', self.trainer.num_epochs)
-        self._b_pattern = self._calc_pattern('batch', self.trainer.num_batches)
+        self.training_status = None
+        self.validation_status = None
 
     def _calc_pattern(self, prefix, total_num):
         """Calculte the message pattern for epoch and batch
@@ -42,27 +39,21 @@ class Printer(Observer):
         pattern = '%s %%0%dd/%d' % (prefix, num_digits, total_num)
         return pattern
 
-    def update_training(self):
-        """Print the training progress"""
-        print(self._get_training_message())
+    def update_batch_end(self):
+        """Print the training progress message"""
+        ep = self._calc_pattern('epoch', self.training_status.num_epochs)
+        bp = self._calc_pattern('batch', self.training_status.num_batches)
+        message = [ep % self.training_status.epoch]
+        message.append(bp % self.training_status.batch)
+        message.append('loss %g' % self.training_status.loss.accumulated)
+        for metric_name, (metric, _) in self.training_status.metrics.items():
+            message.append('%s %g' % (metric_name, metric.accumulated))
+        print(', '.join(message))
 
-    def update_validation(self):
-        print(self._get_validation_message())
-        print('-' * 80)
-
-    def _get_training_message(self):
-        """Get the training progress message"""
-        message = [self._e_pattern % self.trainer.epoch]
-        message.append(self._b_pattern % self.trainer.batch)
-        for key, value in self.trainer.training_values.items():
-            message.append('%s %g' % (key, value.accumulated))
-        message = ', '.join(message)
-        return message
-
-    def _get_validation_message(self):
-        """Get the validation message"""
+    def update_epoch_end(self):
         message = ['validation']
-        for key, value in self.trainer.validation_values.items():
-            message.append('%s %g' % (key, value.accumulated))
-        message = ', '.join(message)
-        return message
+        message.append('loss %g' % self.validation_status.loss.accumulated)
+        for metric_name, (metric, _) in self.validation_status.metrics.items():
+            message.append('%s %g' % (metric_name, metric.accumulated))
+        print(', '.join(message))
+        print('-' * 80)
