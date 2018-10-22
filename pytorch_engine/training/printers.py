@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .abstract import Observer
+from .observer import Observer
 
 
 class Printer(Observer):
@@ -21,8 +21,7 @@ class Printer(Observer):
     """
     def __init__(self):
         """Initialize"""
-        self.training_status = None
-        self.validation_status = None
+        self.trainer = None
 
     def _calc_pattern(self, prefix, total_num):
         """Calculte the message pattern for epoch and batch
@@ -39,21 +38,22 @@ class Printer(Observer):
         pattern = '%s %%0%dd/%d' % (prefix, num_digits, total_num)
         return pattern
 
-    def update_batch_end(self):
+    def update_on_batch_end(self):
         """Print the training progress message"""
-        ep = self._calc_pattern('epoch', self.training_status.num_epochs)
-        bp = self._calc_pattern('batch', self.training_status.num_batches)
-        message = [ep % self.training_status.epoch]
-        message.append(bp % self.training_status.batch)
-        message.append('loss %g' % self.training_status.loss.accumulated)
-        for metric_name, (metric, _) in self.training_status.metrics.items():
-            message.append('%s %g' % (metric_name, metric.accumulated))
+        ep = self._calc_pattern('epoch', self.trainer.num_epochs)
+        bp = self._calc_pattern('batch', self.trainer.num_batches)
+        message = [ep % (self.trainer.epoch + 1)]
+        message.append(bp % (self.trainer.batch + 1))
+        message.append('loss %g' % self.trainer.training_losses.mean)
+        for name, value in self.trainer.training_evaluator.results:
+            message.append('%s %g' % (name, value))
         print(', '.join(message))
 
-    def update_epoch_end(self):
-        message = ['validation']
-        message.append('loss %g' % self.validation_status.loss.accumulated)
-        for metric_name, (metric, _) in self.validation_status.metrics.items():
-            message.append('%s %g' % (metric_name, metric.accumulated))
-        print(', '.join(message))
+    def update_on_epoch_end(self):
+        if self.trainer.validation_loader is not None:
+            message = ['validation']
+            message.append('loss %g' % self.trainer.validation_losses.mean)
+            for name, value in self.trainer.validation_evaluator.results:
+                message.append('%s %g' % (name, value))
+            print(', '.join(message))
         print('-' * 80)
