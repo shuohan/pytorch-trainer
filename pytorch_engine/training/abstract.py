@@ -1,18 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""MVC design pattern:
-
-Model (M): The training status
-View (V): The logger, printer, model saver, etc.
-Controller (C): The training loop
-
-"""
-
-class Status:
-    """Abstract"""
-    def __init__(self):
-        raise NotImplementedError
-
 
 class Trainer:
     """Abstract"""
