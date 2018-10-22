@@ -42,8 +42,11 @@ class Configuration(metaclass=Singleton):
         self.dropout_rate = 0.2
         self.max_channels = 512
         self.upsample_mode = 'nearest'
+        self.upsample_align_corners = False
         self.pool = 'max'
         self.global_pool = 'average'
+        self.decimals = 4
+        self.metrics = list()
         if 'config_path' in kwargs and os.path.isfile(kwargs['config_path']):
             self._load_config(kwargs['config_path'])
 
