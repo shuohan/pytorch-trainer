@@ -3,10 +3,13 @@
 
 class Observer:
     """Get notified by Trainer to update its status
+    
+    Args:
+        trainer (.trainer.Trainer): Object training the network
 
     """
-    def __init__(self, model):
-        self.model = model
+    def __init__(self):
+        self.trainer = None
 
     def update_on_training_start(self):
         """Update just before the training starts"""

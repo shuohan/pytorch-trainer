@@ -19,11 +19,10 @@ class ModelSaver(Observer):
     """
     def __init__(self, saving_period, saving_path_pattern,
                  save_weights_only=False):
+        super().__init__()
         self.saving_period = saving_period
         self.saving_path_pattern = saving_path_pattern
         self.save_weights_only = save_weights_only
-        self.trainer = None
-
         dirname = os.path.dirname(self.saving_path_pattern)
         if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)

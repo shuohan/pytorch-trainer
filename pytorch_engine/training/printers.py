@@ -19,10 +19,6 @@ class Printer(Observer):
         trainer (Trainer): The trainer holding the training progeress
 
     """
-    def __init__(self):
-        """Initialize"""
-        self.trainer = None
-
     def _calc_pattern(self, prefix, total_num):
         """Calculte the message pattern for epoch and batch
             
