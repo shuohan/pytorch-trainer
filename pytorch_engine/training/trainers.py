@@ -115,7 +115,7 @@ class SimpleTrainer(Trainer):
         loss.backward()
         self.optimizer.step()
         self.training_losses.append(loss.item())
-        self.training_evaluator.evaluate(input, truth)
+        self.training_evaluator.evaluate(output, truth)
 
     def _validate_on_epoch(self):
         """Validate the model for each epoch"""

@@ -50,6 +50,6 @@ class Evaluator:
         
         """
         results = OrderedDict()
-        for key, value in self._values:
+        for key, value in self._values.items():
             results[key] = value.mean
         return results
