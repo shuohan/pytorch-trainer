@@ -25,9 +25,11 @@ class Evaluator:
         config = Configuration()
         self._funcs = OrderedDict()
         self._values = OrderedDict()
+        self.metric_names = list()
         for name in config.metrics:
             self._funcs[name] = METRIC_FUNCS[name]
             self._values[name] = Buffer(buffer_length)
+            self.metric_names.append(name)
 
     def evaluate(self, prediction, truth):
         """Evaluate the model using prediction and the corresponding truth
