@@ -37,8 +37,8 @@ class Configuration(metaclass=Singleton):
         self.num_dims = 3
         self.kernel_init = 'kaiming_normal'
         self.norm = 'instance'
-        self.activ = 'leaky_relu'
-        self.activ_para = dict(negative_slope=0.1)
+        self.activ = 'relu'
+        self.activ_para = dict()
         self.dropout_rate = 0.2
         self.max_channels = 512
         self.upsample_mode = 'nearest'
