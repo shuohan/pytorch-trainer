@@ -14,6 +14,7 @@ class Trainer:
     """Abstract"""
     def __init__(self):
         self._observers = list()
+        self.models = OrderedDict()
 
     def register_observer(self, observer):
         """Register an observer
@@ -32,7 +33,11 @@ class Trainer:
         self._notify_observers_on_training_start()
         for self.epoch in range(self.num_epochs):
             self._notify_observers_on_epoch_start()
+            for model in self.models.values():
+                model.train()
             self._train_on_epoch()
+            for model in self.models.values():
+                model.eval()
             self._validate_on_epoch()
             self._notify_observers_on_epoch_end()
         self._notify_observers_on_training_end()
