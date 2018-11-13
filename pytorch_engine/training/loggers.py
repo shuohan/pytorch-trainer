@@ -58,10 +58,13 @@ class BasicLogger(Logger):
         elif self.type == 'validation':
             self.losses = self.trainer.validation_losses
             self.evaluator = self.trainer.validation_evaluator
+        print(self.losses)
         super().update_on_training_start()
 
     def update_on_epoch_end(self):
-        line = '%d,%g' % (self.trainer.epoch+1, self.losses.mean)
+        line = '%d' % (self.trainer.epoch + 1)
+        for losses in self.losses.values():
+            line += ',%g' % losses.mean
         for value in self.evaluator.results.values():
             line = '%s,%g' % (line, value)
         line += '\n'
@@ -69,7 +72,7 @@ class BasicLogger(Logger):
         self.file.flush()
 
     def _write_header(self):
-        header = ['epoch', 'loss']
+        header = ['epoch'] + list(self.losses.keys())
         header += self.evaluator.metric_names
         header = ','.join(header) + '\n'
         self.file.write(header)

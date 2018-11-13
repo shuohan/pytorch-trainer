@@ -40,7 +40,8 @@ class Printer(Observer):
         bp = self._calc_pattern('batch', self.trainer.num_batches)
         message = [ep % (self.trainer.epoch + 1)]
         message.append(bp % (self.trainer.batch + 1))
-        message.append('loss %g' % self.trainer.training_losses.mean)
+        for key, value in self.trainer.training_losses.items():
+            message.append('%s %g' % (key, value.mean))
         for key, value in self.trainer.training_evaluator.results.items():
             message.append('%s %g' % (key, value))
         print(', '.join(message))
@@ -48,7 +49,8 @@ class Printer(Observer):
     def update_on_epoch_end(self):
         if self.trainer.validation_loader is not None:
             message = ['validation']
-            message.append('loss %g' % self.trainer.validation_losses.mean)
+            for key, value in self.trainer.validation_losses.items():
+                message.append('%s %g' % (key, value.mean))
             for key, value in self.trainer.validation_evaluator.results.items():
                 message.append('%s %g' % (key, value))
             print(', '.join(message))
