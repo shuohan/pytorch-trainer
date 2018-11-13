@@ -15,6 +15,65 @@ class Trainer:
     def __init__(self):
         self._observers = list()
 
+    def register_observer(self, observer):
+        """Register an observer
+
+        An registered observer will get notified during training
+
+        Args:
+            observer (.abstract.Observer): The observer to notify
+
+        """
+        observer.trainer = self
+        self._observers.append(observer)
+
+    def train(self):
+        """Train the model"""
+        self._notify_observers_on_training_start()
+        for self.epoch in range(self.num_epochs):
+            self._notify_observers_on_epoch_start()
+            self._train_on_epoch()
+            self._validate_on_epoch()
+            self._notify_observers_on_epoch_end()
+        self._notify_observers_on_training_end()
+
+    def _train_on_epoch(self):
+        """Train the model for each epoch"""
+        for self.batch, (input, truth) in enumerate(self.training_loader):
+            self._notify_observers_on_batch_start()
+            self._train_on_batch(input, truth)
+            self._notify_observers_on_batch_end()
+
+    def _notify_observers_on_training_start(self):
+        """"Notify the observers for changes on the start of the training"""
+        for observer in self._observers:
+            observer.update_on_training_start()
+
+    def _notify_observers_on_epoch_start(self):
+        """"Notify the observers for changes on the start of each epoch"""
+        for observer in self._observers:
+            observer.update_on_epoch_start()
+
+    def _notify_observers_on_batch_start(self):
+        """"Notify the observers for changes on the start of each mini-batch"""
+        for observer in self._observers:
+            observer.update_on_batch_start()
+
+    def _notify_observers_on_batch_end(self):
+        """"Notify the observers for changes on the end of each mini-batch"""
+        for observer in self._observers:
+            observer.update_on_batch_end()
+
+    def _notify_observers_on_epoch_end(self):
+        """"Notify the observers for changes on the end of each epoch"""
+        for observer in self._observers:
+            observer.update_on_epoch_end()
+
+    def _notify_observers_on_training_end(self):
+        """"Notify the observers for changes on the end of the training"""
+        for observer in self._observers:
+            observer.update_on_training_end()
+
 
 class SimpleTrainer(Trainer):
     """The Most simple trainer; iterate the training data to update the model
@@ -44,7 +103,8 @@ class SimpleTrainer(Trainer):
         """Initialize
         
         """
-        self._observers = list()
+        super().__init__()
+
         self.use_gpu = torch.cuda.device_count() > 0
         if self.use_gpu:
             model = model.cuda()
@@ -67,35 +127,6 @@ class SimpleTrainer(Trainer):
         else:
             self.validation_losses ={'loss':Buffer(len(self.validation_loader))}
             self.validation_evaluator = Evaluator(len(self.validation_loader))
-
-    def register_observer(self, observer):
-        """Register an observer
-
-        An registered observer will get notified during training
-
-        Args:
-            observer (.abstract.Observer): The observer to notify
-
-        """
-        observer.trainer = self
-        self._observers.append(observer) 
-
-    def train(self):
-        """Train the model"""
-        self._notify_observers_on_training_start()
-        for self.epoch in range(self.num_epochs):
-            self._notify_observers_on_epoch_start()
-            self._train_on_epoch()
-            self._validate_on_epoch()
-            self._notify_observers_on_epoch_end()
-        self._notify_observers_on_training_end()
-
-    def _train_on_epoch(self):
-        """Train the model for each epoch"""
-        for self.batch, (input, truth) in enumerate(self.training_loader):
-            self._notify_observers_on_batch_start()
-            self._train_on_batch(input, truth)
-            self._notify_observers_on_batch_end()
 
     def _train_on_batch(self, input, truth):
         """Train the model for each batch
@@ -141,36 +172,6 @@ class SimpleTrainer(Trainer):
         loss = self.loss_func(output, truth).item()
         self.validation_losses['loss'].append(loss)
         self.validation_evaluator.evaluate(output, truth)
-
-    def _notify_observers_on_training_start(self):
-        """"Notify the observers for changes on the start of the training"""
-        for observer in self._observers:
-            observer.update_on_training_start()
-
-    def _notify_observers_on_epoch_start(self):
-        """"Notify the observers for changes on the start of each epoch"""
-        for observer in self._observers:
-            observer.update_on_epoch_start()
-
-    def _notify_observers_on_batch_start(self):
-        """"Notify the observers for changes on the start of each mini-batch"""
-        for observer in self._observers:
-            observer.update_on_batch_start()
-
-    def _notify_observers_on_batch_end(self):
-        """"Notify the observers for changes on the end of each mini-batch"""
-        for observer in self._observers:
-            observer.update_on_batch_end()
-
-    def _notify_observers_on_epoch_end(self):
-        """"Notify the observers for changes on the end of each epoch"""
-        for observer in self._observers:
-            observer.update_on_epoch_end()
-
-    def _notify_observers_on_training_end(self):
-        """"Notify the observers for changes on the end of the training"""
-        for observer in self._observers:
-            observer.update_on_training_end()
 
 
 class GANTrainer(SimpleTrainer):
