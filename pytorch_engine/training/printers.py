@@ -47,9 +47,9 @@ class Printer(Observer):
             message.append(ep % (self.observable.epoch + 1))
             message.append(bp % (self.observable.batch + 1))
             for key, value in self.observable.losses.items():
-                message.append('%s %g' % (key, value.mean))
+                message.append('%s %g' % (key, value.current))
             for key, value in self.observable.evaluator.results.items():
-                message.append('%s %g' % (key, value))
+                message.append('%s %g' % (key, value.current))
             print(', '.join(message))
 
     def update_on_epoch_end(self):
@@ -57,6 +57,6 @@ class Printer(Observer):
         for key, value in self.observable.losses.items():
             message.append('%s %g' % (key, value.mean))
         for key, value in self.observable.evaluator.results.items():
-            message.append('%s %g' % (key, value))
+            message.append('%s %g' % (key, value.mean))
         print(', '.join(message))
         print('-' * 80)

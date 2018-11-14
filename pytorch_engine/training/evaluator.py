@@ -66,19 +66,18 @@ class Evaluator:
         results (collections.OrderedDict): The evaluation results of the currect
             epoch; each (key, value) pair is a specified metric such as Dice
         _funcs (collections.OrderedDict): The metric functions
-        _values (collections.OrderedDict): The buffer holding the evaluation
-            resluts
+        results (collections.OrderedDict): Hold the evaluation resluts
 
     """
     def __init__(self, buffer_length):
         config = Configuration()
         self._funcs = OrderedDict()
-        self._values = OrderedDict()
+        self.results = OrderedDict()
         self.metric_names = list()
         metric_funcs = MetricFuncs()
         for name in config.metrics:
             self._funcs[name] = metric_funcs[name]
-            self._values[name] = Buffer(buffer_length)
+            self.results[name] = Buffer(buffer_length)
             self.metric_names.append(name)
 
     def evaluate(self, prediction, truth):
@@ -90,18 +89,4 @@ class Evaluator:
 
         """
         for key in self._funcs.keys():
-            self._values[key].append(self._funcs[key](prediction, truth))
-
-    @property
-    def results(self):
-        """Get the evaluated results
-
-        Returns:
-            results (collections.OrderedDict): The mean evaluated resutls over
-                a epoch
-        
-        """
-        results = OrderedDict()
-        for key, value in self._values.items():
-            results[key] = value.mean
-        return results
+            self.results[key].append(self._funcs[key](prediction, truth))
