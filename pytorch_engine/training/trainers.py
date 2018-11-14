@@ -7,26 +7,24 @@ from collections import OrderedDict
 
 from .buffer import Buffer
 from .evaluator import Evaluator
+from .observer import Observable
 from ..config import Configuration
 
 
-class Trainer:
+class Trainer(Observable):
     """Abstract"""
-    def __init__(self):
-        self._observers = list()
+    def __init__(self, data_loader, num_epochs=100, num_batches=10):
+        self.data_loader = data_loader
+        self.num_epochs = num_epochs
+        self.num_batches = num_batches
+
+        self.use_gpu = torch.cuda.device_count() > 0
+
         self.models = OrderedDict()
+        self.losses = OrderedDict()
+        self.evaluator = Evaluator(self.num_batches)
 
-    def register_observer(self, observer):
-        """Register an observer
-
-        An registered observer will get notified during training
-
-        Args:
-            observer (.abstract.Observer): The observer to notify
-
-        """
-        observer.trainer = self
-        self._observers.append(observer)
+        self._observers = list()
 
     def train(self):
         """Train the model"""
@@ -36,48 +34,15 @@ class Trainer:
             for model in self.models.values():
                 model.train()
             self._train_on_epoch()
-            for model in self.models.values():
-                model.eval()
-            self._validate_on_epoch()
             self._notify_observers_on_epoch_end()
         self._notify_observers_on_training_end()
 
     def _train_on_epoch(self):
         """Train the model for each epoch"""
-        for self.batch, (input, truth) in enumerate(self.training_loader):
+        for self.batch, (input, truth) in enumerate(self.data_loader):
             self._notify_observers_on_batch_start()
             self._train_on_batch(input, truth)
             self._notify_observers_on_batch_end()
-
-    def _notify_observers_on_training_start(self):
-        """"Notify the observers for changes on the start of the training"""
-        for observer in self._observers:
-            observer.update_on_training_start()
-
-    def _notify_observers_on_epoch_start(self):
-        """"Notify the observers for changes on the start of each epoch"""
-        for observer in self._observers:
-            observer.update_on_epoch_start()
-
-    def _notify_observers_on_batch_start(self):
-        """"Notify the observers for changes on the start of each mini-batch"""
-        for observer in self._observers:
-            observer.update_on_batch_start()
-
-    def _notify_observers_on_batch_end(self):
-        """"Notify the observers for changes on the end of each mini-batch"""
-        for observer in self._observers:
-            observer.update_on_batch_end()
-
-    def _notify_observers_on_epoch_end(self):
-        """"Notify the observers for changes on the end of each epoch"""
-        for observer in self._observers:
-            observer.update_on_epoch_end()
-
-    def _notify_observers_on_training_end(self):
-        """"Notify the observers for changes on the end of the training"""
-        for observer in self._observers:
-            observer.update_on_training_end()
 
 
 class SimpleTrainer(Trainer):
@@ -103,35 +68,21 @@ class SimpleTrainer(Trainer):
             the validation data
 
     """
-    def __init__(self, model, loss_func, optimizer, training_loader,
-                 num_epochs=500, num_batches=20, validation_loader=None):
+    def __init__(self, model, loss_func, optimizer, data_loader,
+                 num_epochs=500, num_batches=20):
         """Initialize
         
         """
-        super().__init__()
-
-        self.use_gpu = torch.cuda.device_count() > 0
+        super().__init__(data_loader=data_loader, num_epochs=num_epochs,
+                         num_batches=num_batches)
         if self.use_gpu:
             model = model.cuda()
-        self.models = dict(model=model)
+        self.models['model'] = model
 
-        self.num_epochs = num_epochs
-        self.num_batches = num_batches
         self.loss_func = loss_func
         self.optimizer = optimizer
 
-        self.training_loader = training_loader
-        self.training_losses = OrderedDict()
-        self.training_losses['loss'] = Buffer(self.num_batches)
-        self.training_evaluator = Evaluator(self.num_batches)
-
-        self.validation_loader = validation_loader
-        if self.validation_loader is None:
-            self.validation_losses = None
-            self.validation_evaluator = None
-        else:
-            self.validation_losses ={'loss':Buffer(len(self.validation_loader))}
-            self.validation_evaluator = Evaluator(len(self.validation_loader))
+        self.losses['loss'] = Buffer(self.num_batches)
 
     def _train_on_batch(self, input, truth):
         """Train the model for each batch
@@ -151,44 +102,27 @@ class SimpleTrainer(Trainer):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self.training_losses['loss'].append(loss.item())
-        self.training_evaluator.evaluate(output, truth)
-
-    def _validate_on_epoch(self):
-        """Validate the model for each epoch"""
-        with torch.no_grad():
-            for input, truth in self.validation_loader:
-                self._validate_on_batch(input, truth)
-
-    def _validate_on_batch(self, input, truth):
-        """Validate the model for each batch
-
-        Args:
-            input (torch.Tensor): The input to the model
-            truth (torch.Tensor): The truth of the model output
-
-        """
-        input = input.float()
-        truth = truth.float()
-        if self.use_gpu:
-            input = input.cuda()
-            truth = truth.cuda()
-        output = self.models['model'](input)
-        loss = self.loss_func(output, truth).item()
-        self.validation_losses['loss'].append(loss)
-        self.validation_evaluator.evaluate(output, truth)
+        self.losses['loss'].append(loss.item())
+        self.evaluator.evaluate(output, truth)
 
 
-class GANTrainer(SimpleTrainer):
+class GANTrainer(Trainer):
     def __init__(self, generator, discriminator, pixel_criterion, adv_criterion,
                  generator_optimizer, discriminator_optimizer,
-                 training_loader, pixel_lambda=0.9, adv_lambda=0.1,
-                 num_epochs=500, num_batches=20, validation_loader=None):
+                 data_loader, pixel_lambda=0.9, adv_lambda=0.1,
+                 num_epochs=500, num_batches=20):
         """Initialize
         
         """
-        self._observers = list()
-        
+        super().__init__(data_loader=data_loader, num_epochs=num_epochs,
+                         num_batches=num_batches)
+
+        if self.use_gpu:
+            generator = generator.cuda()
+            discriminator = discriminator.cuda()
+        self.models['generator'] = generator
+        self.models['discriminator'] = discriminator
+
         self.pixel_criterion = pixel_criterion
         self.adv_criterion = adv_criterion
         self.pixel_lambda = pixel_lambda
@@ -196,34 +130,10 @@ class GANTrainer(SimpleTrainer):
         self.generator_optimizer = generator_optimizer
         self.discriminator_optimizer = discriminator_optimizer
 
-        self.use_gpu = torch.cuda.device_count() > 0
-        if self.use_gpu:
-            generator = generator.cuda()
-            discriminator = discriminator.cuda()
-        self.models = dict(generator=generator, discriminator=discriminator)
-
-        self.num_epochs = num_epochs
-        self.num_batches = num_batches
-
-        self.training_loader = training_loader
-
-        self.training_losses = OrderedDict()
-        self.training_losses['gen_loss'] = Buffer(self.num_batches)
-        self.training_losses['pixel_loss'] = Buffer(self.num_batches)
-        self.training_losses['adv_loss'] = Buffer(self.num_batches)
-        self.training_losses['dis_loss'] = Buffer(self.num_batches)
-
-        self.training_evaluator = Evaluator(self.num_batches)
-
-        self.validation_loader = validation_loader
-        if self.validation_loader is None:
-            self.validation_losses = None
-            self.validation_evaluator = None
-        else:
-            self.validation_losses = OrderedDict()
-            self.validation_losses['pixel_loss'] = Buffer(len(self.validation_loader))
-            self.validation_losses['adv_loss'] = Buffer(len(self.validation_loader))
-            self.validation_evaluator = Evaluator(len(self.validation_loader))
+        self.losses['gen_loss'] = Buffer(self.num_batches)
+        self.losses['pixel_loss'] = Buffer(self.num_batches)
+        self.losses['adv_loss'] = Buffer(self.num_batches)
+        self.losses['dis_loss'] = Buffer(self.num_batches)
 
     def _train_on_batch(self, source, target):
         """Train the model for each batch
@@ -261,31 +171,9 @@ class GANTrainer(SimpleTrainer):
         dis_loss.backward()
         self.discriminator_optimizer.step()
 
-        self.training_losses['gen_loss'].append(gen_loss.item())
-        self.training_losses['pixel_loss'].append(pixel_loss.item())
-        self.training_losses['adv_loss'].append(adv_loss.item())
-        self.training_losses['dis_loss'].append(dis_loss.item())
+        self.losses['gen_loss'].append(gen_loss.item())
+        self.losses['pixel_loss'].append(pixel_loss.item())
+        self.losses['adv_loss'].append(adv_loss.item())
+        self.losses['dis_loss'].append(dis_loss.item())
 
-        self.training_evaluator.evaluate(gen_pred, target)
-
-    def _validate_on_batch(self, input, truth):
-        """Validate the model for each batch
-
-        Args:
-            input (torch.Tensor): The input to the model
-            truth (torch.Tensor): The truth of the model output
-
-        """
-        input = input.float()
-        truth = truth.float()
-        if self.use_gpu:
-            input = input.cuda()
-            truth = truth.cuda()
-        gen_pred = self.models['generator'](input)
-        dis_pred = self.models['discriminator'](gen_pred, input)
-        ones = torch.ones_like(dis_pred, requires_grad=False)
-        pixel_loss = self.pixel_criterion(gen_pred, truth).item()
-        adv_loss = self.adv_criterion(dis_pred, ones).item()
-        self.validation_losses['pixel_loss'].append(pixel_loss)
-        self.validation_losses['adv_loss'].append(adv_loss)
-        self.validation_evaluator.evaluate(gen_pred, truth)
+        self.evaluator.evaluate(gen_pred, target)

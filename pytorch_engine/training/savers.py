@@ -38,13 +38,13 @@ class ModelSaver(Observer):
 
     def update_on_training_start(self):
         """Calculate the number of the digits of the total number of epochs"""
-        self._num_digits = len(str(self.trainer.num_epochs))
+        self._num_digits = len(str(self.observable.num_epochs))
 
     def update_on_epoch_end(self):
         """Save the model every self.saving_period number of epochs"""
-        if (self.trainer.epoch + 1) % self.saving_period == 0:
-            epoch = ('%%0%dd' % self._num_digits) % (self.trainer.epoch + 1)
-            for name, model in self.trainer.models.items():
+        if (self.observable.epoch + 1) % self.saving_period == 0:
+            epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
+            for name, model in self.observable.models.items():
                 fn = self.saving_path_pattern.format(name=name, epoch=epoch)
                 if self.save_weights_only:
                     torch.save(model.state_dict(), fn)

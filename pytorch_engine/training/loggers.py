@@ -52,17 +52,12 @@ class BasicLogger(Logger):
         self.type = type
 
     def update_on_training_start(self):
-        if self.type == 'training':
-            self.losses = self.trainer.training_losses
-            self.evaluator = self.trainer.training_evaluator
-        elif self.type == 'validation':
-            self.losses = self.trainer.validation_losses
-            self.evaluator = self.trainer.validation_evaluator
-        print(self.losses)
+        self.losses = self.observable.losses
+        self.evaluator = self.observable.evaluator
         super().update_on_training_start()
 
     def update_on_epoch_end(self):
-        line = '%d' % (self.trainer.epoch + 1)
+        line = '%d' % (self.observable.epoch + 1)
         for losses in self.losses.values():
             line += ',%g' % losses.mean
         for value in self.evaluator.results.values():
