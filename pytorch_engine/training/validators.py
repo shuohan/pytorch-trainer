@@ -2,27 +2,35 @@
 # -*- coding: utf-8 -*-
 
 import torch
-from collections import OrderedDict
 
 from .observer import Observer, Observable
 from .buffer import Buffer
-from .evaluator import Evaluator
 
 
 class Validator(Observable, Observer):
     """Validate model
 
+    Attributes:
+        data_loader (torch.utils.data.DataLoader): Data loader
+        num_epochs (int): The number of epochs
+        num_batches (int): The number of batches
+        loses (collections.OrderedDict): The losses
+        evaluator (.evaluator.Evaluator): Evaluate the model
+
     """
-    def __init__(self, data_loader):
-        self.data_loader = data_loader
+    def __init__(self, data_loader, num_batches=10):
+        """Initialize"""
+        super().__init__(data_loader, None, num_batches)
 
     def update_on_training_start(self):
-        self.losses = OrderedDict()
+        """Initialize the losses and evaluator"""
+        self.num_epochs = self.observable.num_epochs
         for name in self.observable.losses.keys():
-            self.losses[name] = Buffer(self.observable.num_batches)
-        self.evaluator = Evaluator(self.observable.num_batches)
+            self.losses[name] = Buffer(self.num_batches)
+        self.evaluator = Evaluator(self.num_batches)
 
     def update_on_epoch_end(self):
+        """Validate the model using the models"""
         with torch.no_grad():
             for model in self.observable.models.values():
                 model.eval()
@@ -35,10 +43,18 @@ class Validator(Observable, Observer):
                 self._validate(input, truth)
 
     def _validate(self, input, truth):
+        """Validate on input and the truth
+
+        Args:
+            input (torch.Tensor): The input tensor to the models
+            truth (torch.Tensor): The target output
+
+        """
         raise NotImplementedError
 
 
 class SimpleValidator(Validator):
+    """Simple validator with only one model"""
     def _validate(self, input, truth):
         output = self.observable.models['model'](input)
         loss = self.observable.loss_func(output, truth).item()
@@ -47,6 +63,7 @@ class SimpleValidator(Validator):
 
 
 class ConditionalGANValidator(Validator):
+    """Validate the conditional GAN"""
     def _validate(self, input, truth):
         gen_pred = self.observable.models['generator'](input)
         fake_pred = self.observable.models['discriminator'](gen_pred, input)

@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
+
+from .evaluator import Evaluator
+
 
 class Observer:
-    """Get notified by Trainer to update its status
+    """Get notified by Observable to update its status
     
     Args:
-        trainer (.trainer.Trainer): Object training the network
+        observable (.Observable): The observable
 
     """
     def __init__(self):
-        self.trainer = None
+        self.observable = None
 
     def update_on_training_start(self):
         """Update just before the training starts"""
@@ -37,6 +41,34 @@ class Observer:
 
 
 class Observable:
+    """Trainer or Validator
+
+    Attributes:
+        data_loader (torch.utils.data.DataLoader): The data loader
+        num_epochs (int): The number of epochs
+        num_batches (int): The number of batches
+        use_gpu (bool): If to use GPU to train or validate
+        models (collections.OrderedDict): The models to train or validate
+        losses (collections.OrderedDict): Keep track of the losses
+        evaluator (.evaluator.Evaluator): Evaluate the models
+        _observers (list): The observers to notify
+
+    """
+    def __init__(self, data_loader, num_epochs=100, num_batches=10,
+                use_gpu=True):
+        """Initialize
+        
+        """
+        self.data_loader = data_loader
+        self.num_epochs = num_epochs
+        self.num_batches = num_batches
+        self.use_gpu = use_gpu
+
+        self.models = OrderedDict()
+        self.losses = OrderedDict()
+        self.evaluator = Evaluator(self.num_batches)
+
+        self._observers = list()
 
     def register_observer(self, observer):
         """Register an observer

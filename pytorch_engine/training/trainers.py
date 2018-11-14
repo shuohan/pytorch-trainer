@@ -3,29 +3,22 @@
 import os
 import numpy as np
 import torch
-from collections import OrderedDict
 
 from .buffer import Buffer
-from .evaluator import Evaluator
 from .observer import Observable
 from ..config import Configuration
 
 
 class Trainer(Observable):
-    """Abstract"""
-    def __init__(self, data_loader, num_epochs=100, num_batches=10):
-        self.data_loader = data_loader
-        self.num_epochs = num_epochs
-        self.num_batches = num_batches
+    """Train models
 
-        self.use_gpu = torch.cuda.device_count() > 0
+    Attributes:
+        data_loader (torch.utils.data.DataLoader): The data loader
+        num_epochs (int): The number of epochs
+        num_batches (int): The number of batches
+        use_gpu (bool): If to use GPU to train or validate
 
-        self.models = OrderedDict()
-        self.losses = OrderedDict()
-        self.evaluator = Evaluator(self.num_batches)
-
-        self._observers = list()
-
+    """
     def train(self):
         """Train the model"""
         self._notify_observers_on_training_start()
@@ -49,23 +42,8 @@ class SimpleTrainer(Trainer):
     """The Most simple trainer; iterate the training data to update the model
 
     Attributes:
-        model (torch.nn.Module): The network to train
         loss_func (function): The loss function
         optimizer (torch.optim.Optimizer): The optimizer
-        training_loader (torch.utils.data.DataLoader): Iterate through the
-            training data to optimize the network
-        validation_loader (torch.utils.data.DataLoader): The validation data
-        num_epochs (int): The number total epochs
-        num_batches (int): The number of mini-batches per epoch
-        use_gpu (bool): Use GPU to train if any GPUs are available
-        _observers (list): Observers to notify during training
-        training_losses (.buffer.Buffer): Keep track of losses
-        validation_losses (.buffer.Buffer): Keep track of losses of validation
-            data
-        training_evaluator (.evaluator.Evaluator): Evaludate the model using
-            the training data
-        validation_evaluator (.evaluator.Evaluator): Evaludate the model using
-            the validation data
 
     """
     def __init__(self, model, loss_func, optimizer, data_loader,
@@ -73,16 +51,11 @@ class SimpleTrainer(Trainer):
         """Initialize
         
         """
-        super().__init__(data_loader=data_loader, num_epochs=num_epochs,
-                         num_batches=num_batches)
-        if self.use_gpu:
-            model = model.cuda()
-        self.models['model'] = model
-
+        super().__init__(data_loader, num_epochs, num_batches)
+        self.models['model'] = model if self.use_gpu else model.cuda()
+        self.losses['loss'] = Buffer(self.num_batches)
         self.loss_func = loss_func
         self.optimizer = optimizer
-
-        self.losses['loss'] = Buffer(self.num_batches)
 
     def _train_on_batch(self, input, truth):
         """Train the model for each batch
@@ -92,11 +65,8 @@ class SimpleTrainer(Trainer):
             truth (torch.Tensor): The target/truth of the output of the model
 
         """
-        input = input.float()
-        truth = truth.float()
-        if self.use_gpu:
-            input = input.cuda()
-            truth = truth.cuda()
+        input = input.float() if self.use_gpu else input.float().cuda()
+        truth = truth.float() if self.use_gpu else truth.float().cuda()
         output = self.models['model'](input)
         loss = self.loss_func(output, truth)
         self.optimizer.zero_grad()
@@ -114,8 +84,7 @@ class GANTrainer(Trainer):
         """Initialize
         
         """
-        super().__init__(data_loader=data_loader, num_epochs=num_epochs,
-                         num_batches=num_batches)
+        super().__init__(data_loader, num_epochs, num_batches)
 
         if self.use_gpu:
             generator = generator.cuda()
