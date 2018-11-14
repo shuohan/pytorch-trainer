@@ -27,10 +27,11 @@ class Validator(Observable, Observer):
         self.num_epochs = self.observable.num_epochs
         for name in self.observable.losses.keys():
             self.losses[name] = Buffer(self.num_batches)
-        self.evaluator = Evaluator(self.num_batches)
+        self._notify_observers_on_training_start()
 
     def update_on_epoch_end(self):
         """Validate the model using the models"""
+        self.epoch = self.observable.epoch
         with torch.no_grad():
             for model in self.observable.models.values():
                 model.eval()
@@ -41,6 +42,10 @@ class Validator(Observable, Observer):
                     input = input.cuda()
                     truth = truth.cuda()
                 self._validate(input, truth)
+        self._notify_observers_on_epoch_end()
+
+    def update_on_training_end(self):
+        self._notify_observers_on_training_end()
 
     def _validate(self, input, truth):
         """Validate on input and the truth

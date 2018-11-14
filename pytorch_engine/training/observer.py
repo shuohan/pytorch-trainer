@@ -68,6 +68,9 @@ class Observable:
         self.losses = OrderedDict()
         self.evaluator = Evaluator(self.num_batches)
 
+        self.epoch = 0
+        self.batch = 0
+
         self._observers = list()
 
     def register_observer(self, observer):

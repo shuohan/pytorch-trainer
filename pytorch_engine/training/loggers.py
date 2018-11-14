@@ -37,20 +37,6 @@ class BasicLogger(Logger):
     """Write training information to file
 
     """
-    def __init__(self, filename, type='training'):
-        """Initialize
-
-        Args:
-            filename (str): The path to the file to write the info into
-            type (str): {"training", "validation"} Select which info to write
-
-        """
-        super().__init__(filename)
-        if type not in {'training', 'validation'}:
-            raise ValueError('type of %s should be "training" or "validation"' \
-                             % (self.__class__))
-        self.type = type
-
     def update_on_training_start(self):
         self.losses = self.observable.losses
         self.evaluator = self.observable.evaluator
