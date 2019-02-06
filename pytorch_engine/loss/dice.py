@@ -3,6 +3,15 @@
 import torch
 from torch.nn.modules.loss import _Loss
 
+from ..configs import Configurations
+
+
+configs = Configurations()
+if configs.num_dims == 2:
+    dim = (-2, -1)
+elif configs.num_dims == 3:
+    dim = (-3, -2, -1)
+
 
 def calc_aver_dice(image1, image2, eps=0.001):
     """Calculate average Dice across channels
@@ -15,7 +24,6 @@ def calc_aver_dice(image1, image2, eps=0.001):
         dice (float): The average Dice
 
     """
-    dim = (-3, -2, -1)
     intersection = torch.sum(image1 * image2, dim=dim)
     sum1 = torch.sum(image1, dim=dim)
     sum2 = torch.sum(image2, dim=dim)
