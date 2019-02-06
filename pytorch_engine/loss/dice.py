@@ -27,7 +27,7 @@ def calc_aver_dice(image1, image2, eps=0.001):
     intersection = torch.sum(image1 * image2, dim=dim)
     sum1 = torch.sum(image1, dim=dim)
     sum2 = torch.sum(image2, dim=dim)
-    dices = 2 * (intersection + eps) / (sum1 + sum2 + eps)
+    dices = 2 * (intersection + eps) / (sum1 + sum2 + 2 * eps)
     dice = torch.mean(dices)
     return dice
 
