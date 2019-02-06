@@ -10,7 +10,7 @@ version = subprocess.check_output(command).decode().strip()
 
 setup(name='pytorch-engine',
             version=version,
-            description='PyTorch fully convolutional networks',
+            description='PyTorch engine',
             author='Shuo Han',
             author_email='shan50@jhu.edu',
             scripts=scripts,
