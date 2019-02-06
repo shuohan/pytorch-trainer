@@ -47,7 +47,7 @@ class BasicLogger(Logger):
         for losses in self.losses.values():
             line += ',%g' % losses.mean
         for value in self.evaluator.results.values():
-            line = '%s,%g' % (line, value)
+            line = '%s,%g' % (line, value.mean)
         line += '\n'
         self.file.write(line)
         self.file.flush()

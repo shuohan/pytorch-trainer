@@ -6,7 +6,6 @@ import torch
 
 from .buffer import Buffer
 from .observer import Observable
-from ..config import Configuration
 
 
 class Trainer(Observable):
@@ -52,7 +51,7 @@ class SimpleTrainer(Trainer):
         
         """
         super().__init__(data_loader, num_epochs, num_batches)
-        self.models['model'] = model if self.use_gpu else model.cuda()
+        self.models['model'] = model if not self.use_gpu else model.cuda()
         self.losses['loss'] = Buffer(self.num_batches)
         self.loss_func = loss_func
         self.optimizer = optimizer
@@ -65,8 +64,8 @@ class SimpleTrainer(Trainer):
             truth (torch.Tensor): The target/truth of the output of the model
 
         """
-        input = input.float() if self.use_gpu else input.float().cuda()
-        truth = truth.float() if self.use_gpu else truth.float().cuda()
+        input = input.float() if not self.use_gpu else input.float().cuda()
+        truth = truth.float() if not self.use_gpu else truth.float().cuda()
         output = self.models['model'](input)
         loss = self.loss_func(output, truth)
         self.optimizer.zero_grad()
