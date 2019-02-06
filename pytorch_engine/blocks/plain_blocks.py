@@ -30,7 +30,8 @@ class PostActivConvBlock(Module):
         self.out_channels = out_channels
         self.conv = ThreeConv(in_channels, out_channels, stride=stride,
                               bias=False)
-        self.norm = Normalization(out_channels)
+        self.norm = Normalization(out_channels, affine=True,
+                                  track_running_stats=False)
         self.activ = Activation()
 
     def forward(self, input):

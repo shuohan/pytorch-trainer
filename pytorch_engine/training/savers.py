@@ -17,30 +17,36 @@ class ModelSaver(Observer):
         trainer (.trainers.Trainer): The trainer
 
     """
-    def __init__(self, saving_period, saving_path_pattern,
+    def __init__(self, saving_period, saving_path_prefix,
                  save_weights_only=False):
+        """Initialize
+
+        """
+        super().__init__()
         self.saving_period = saving_period
-        self.saving_path_pattern = saving_path_pattern
         self.save_weights_only = save_weights_only
-        self.trainer = None
+
+        self.saving_path_pattern = saving_path_prefix + '{name}_{epoch}'
+        if self.save_weights_only:
+            self.saving_path_pattern += '_weights.pt'
+        else:
+            self.saving_path_pattern += '.pt'
 
         dirname = os.path.dirname(self.saving_path_pattern)
         if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-    def update_on_epoch_end(self):
-        """Save the model every self.saving_period number of epochs
-        
-        """
-        num_digits = len(str(self.trainer.num_epochs))
-        epoch_str = ('%%0%dd' % num_digits) % (self.trainer.epoch + 1)
-        if '{epoch}' in self.saving_path_pattern:
-            filename = self.saving_path_pattern.format(epoch=epoch_str)
-        else:
-            filename = self.saving_path_pattern
+    def update_on_training_start(self):
+        """Calculate the number of the digits of the total number of epochs"""
+        self._num_digits = len(str(self.observable.num_epochs))
 
-        if (self.trainer.epoch + 1) % self.saving_period == 0:
-            if self.save_weights_only:
-                torch.save(self.trainer.model.state_dict(), filename)
-            else:
-                torch.save(self.trainer.model, filename)
+    def update_on_epoch_end(self):
+        """Save the model every self.saving_period number of epochs"""
+        if (self.observable.epoch + 1) % self.saving_period == 0:
+            epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
+            for name, model in self.observable.models.items():
+                fn = self.saving_path_pattern.format(name=name, epoch=epoch)
+                if self.save_weights_only:
+                    torch.save(model.state_dict(), fn)
+                else:
+                    torch.save(model, fn)

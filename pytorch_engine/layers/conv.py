@@ -3,14 +3,14 @@
 
 from torch.nn import Conv2d, Conv3d, ConvTranspose2d, ConvTranspose3d
 
-from ..config import Configuration
+from ..configs import Configurations
 
 
-config = Configuration()
-if config.num_dims == 2:
+configs = Configurations()
+if configs.num_dims == 2:
     Conv = Conv2d
     ConvTranspose = ConvTranspose2d
-elif config.num_dims == 3:
+elif configs.num_dims == 3:
     Conv = Conv3d
     ConvTranspose = ConvTranspose3d
 

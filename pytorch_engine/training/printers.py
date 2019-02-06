@@ -19,9 +19,9 @@ class Printer(Observer):
         trainer (Trainer): The trainer holding the training progeress
 
     """
-    def __init__(self):
-        """Initialize"""
-        self.trainer = None
+    def __init__(self, prefix='', show_batch=True):
+        self.prefix = prefix
+        self.show_batch = show_batch
 
     def _calc_pattern(self, prefix, total_num):
         """Calculte the message pattern for epoch and batch
@@ -40,20 +40,23 @@ class Printer(Observer):
 
     def update_on_batch_end(self):
         """Print the training progress message"""
-        ep = self._calc_pattern('epoch', self.trainer.num_epochs)
-        bp = self._calc_pattern('batch', self.trainer.num_batches)
-        message = [ep % (self.trainer.epoch + 1)]
-        message.append(bp % (self.trainer.batch + 1))
-        message.append('loss %g' % self.trainer.training_losses.mean)
-        for name, value in self.trainer.training_evaluator.results:
-            message.append('%s %g' % (name, value))
-        print(', '.join(message))
+        if self.show_batch:
+            message = [self.prefix]
+            ep = self._calc_pattern('epoch', self.observable.num_epochs)
+            bp = self._calc_pattern('batch', self.observable.num_batches)
+            message.append(ep % (self.observable.epoch + 1))
+            message.append(bp % (self.observable.batch + 1))
+            for key, value in self.observable.losses.items():
+                message.append('%s %g' % (key, value.current))
+            for key, value in self.observable.evaluator.results.items():
+                message.append('%s %g' % (key, value.current))
+            print(', '.join(message))
 
     def update_on_epoch_end(self):
-        if self.trainer.validation_loader is not None:
-            message = ['validation']
-            message.append('loss %g' % self.trainer.validation_losses.mean)
-            for name, value in self.trainer.validation_evaluator.results:
-                message.append('%s %g' % (name, value))
-            print(', '.join(message))
+        message = [self.prefix]
+        for key, value in self.observable.losses.items():
+            message.append('%s %g' % (key, value.mean))
+        for key, value in self.observable.evaluator.results.items():
+            message.append('%s %g' % (key, value.mean))
+        print(', '.join(message))
         print('-' * 80)
