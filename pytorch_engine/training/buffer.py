@@ -3,7 +3,7 @@
 import numpy as np
 from collections import OrderedDict
 
-from ..config import Configuration
+from ..configs import Configurations
 
 
 class Buffer:
@@ -19,7 +19,7 @@ class Buffer:
 
     """
     def __init__(self, max_length):
-        self.decimals = Configuration().decimals
+        self.decimals = Configurations().decimals
         self.max_length = max_length
         self._buffer = np.zeros(max_length, dtype=float)
         self._ind = -1

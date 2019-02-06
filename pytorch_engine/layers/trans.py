@@ -6,30 +6,30 @@ from torch.nn import AdaptiveMaxPool2d, AdaptiveMaxPool3d
 from torch.nn import AdaptiveAvgPool2d, AdaptiveAvgPool3d
 from torch.nn.functional import interpolate
 
-from ..config import Configuration
+from ..configs import Configurations
 
 
-config = Configuration()
+configs = Configurations()
 
-if config.num_dims == 2:
+if configs.num_dims == 2:
     MaxPool = MaxPool2d
     AvgPool = AvgPool2d
     AdaptiveMaxPool = AdaptiveMaxPool2d
     AdaptiveAvgPool = AdaptiveAvgPool2d
-elif config.num_dims == 3:
+elif configs.num_dims == 3:
     MaxPool = MaxPool3d
     AvgPool = AvgPool3d
     AdaptiveMaxPool = AdaptiveMaxPool3d
     AdaptiveAvgPool = AdaptiveAvgPool3d
 
-if config.pool == 'max':
+if configs.pool == 'max':
     Pool = MaxPool
-elif config.pool == 'average':
+elif configs.pool == 'average':
     Pool = AvgPool
 
-if config.global_pool == 'max':
+if configs.global_pool == 'max':
     AdaptivePool = AdaptiveMaxPool
-elif config.global_pool == 'average':
+elif configs.global_pool == 'average':
     AdaptivePool = AdaptiveAvgPool
 
 class GlobalPool(AdaptivePool):
@@ -48,14 +48,14 @@ class Upsample(Module):
         super().__init__()
         self.size = size
         self.scale_factor = scale_factor
-        if config.upsample_mode == 'linear':
-            if config.num_dims == 2:
+        if configs.upsample_mode == 'linear':
+            if configs.num_dims == 2:
                 self.mode = 'bilinear'
-            elif config.num_dims == 3:
+            elif configs.num_dims == 3:
                 self.mode = 'trilinear'
-        elif config.upsample_mode == 'nearest':
+        elif configs.upsample_mode == 'nearest':
             self.mode = 'nearest'
-        self.align_corners = config.upsample_align_corners
+        self.align_corners = configs.upsample_align_corners
         if 'linear' not in self.mode:
             self.align_corners = None
 

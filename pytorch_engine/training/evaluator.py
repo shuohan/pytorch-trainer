@@ -6,13 +6,13 @@ from functools import partial
 
 from .buffer import Buffer
 from ..loss import calc_aver_dice
-from ..config import Configuration
+from ..configs import Configurations
 
 
-config = Configuration()
-if config.num_dims == 2:
+configs = Configurations()
+if configs.num_dims == 2:
     dim = (-2, -1)
-elif config.num_dims == 3:
+elif configs.num_dims == 3:
     dim = (-3, -2, -1)
 
 
@@ -70,12 +70,12 @@ class Evaluator:
 
     """
     def __init__(self, buffer_length):
-        config = Configuration()
+        configs = Configurations()
         self._funcs = OrderedDict()
         self.results = OrderedDict()
         self.metric_names = list()
         metric_funcs = MetricFuncs()
-        for name in config.metrics:
+        for name in configs.metrics:
             self._funcs[name] = metric_funcs[name]
             self.results[name] = Buffer(buffer_length)
             self.metric_names.append(name)
