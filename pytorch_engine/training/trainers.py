@@ -6,6 +6,7 @@ import torch
 
 from .buffer import Buffer
 from .observer import Observable
+from ..configs import Configurations
 
 
 class Trainer(Observable):
@@ -64,8 +65,9 @@ class SimpleTrainer(Trainer):
             truth (torch.Tensor): The target/truth of the output of the model
 
         """
-        input = input.float() if not self.use_gpu else input.float().cuda()
-        truth = truth.float() if not self.use_gpu else truth.float().cuda()
+        if self.use_gpu:
+            input = input.cuda()
+            truth = truth.cuda()
         output = self.models['model'](input)
         loss = self.loss_func(output, truth)
         self.optimizer.zero_grad()
