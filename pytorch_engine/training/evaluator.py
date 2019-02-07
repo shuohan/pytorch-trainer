@@ -9,13 +9,6 @@ from ..loss import calc_aver_dice
 from ..configs import Configurations
 
 
-configs = Configurations()
-if configs.num_dims == 2:
-    dim = (-2, -1)
-elif configs.num_dims == 3:
-    dim = (-3, -2, -1)
-
-
 class MetricFuncs:
     """Return metric functions
 
@@ -49,6 +42,11 @@ def calc_dice(image1, image2, channel_ids=[0]):
         dice (float): The Dice
 
     """
+    configs = Configurations()
+    if configs.num_dims == 2:
+        dim = (-2, -1)
+    elif configs.num_dims == 3:
+        dim = (-3, -2, -1)
     image1_tmp = image1[:, channel_ids, ...]
     image2_tmp = image2[:, channel_ids, ...]
     intersection = torch.sum(image1_tmp * image2_tmp, dim=dim)
