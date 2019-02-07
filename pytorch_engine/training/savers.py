@@ -4,6 +4,7 @@
 import torch
 import os
 from .observer import Observer
+from ..configs import Configurations
 
 
 class ModelSaver(Observer):
@@ -14,18 +15,21 @@ class ModelSaver(Observer):
         saving_path_pattern (str): The filename pattern; "{epoch}" will be
             replaced by the current epoch id
         save_weights_only (bool): Only save the weights
+        model_attributes (list): The attributes of the model to save
         trainer (.trainers.Trainer): The trainer
 
     """
     def __init__(self, saving_period, saving_path_prefix,
-                 save_weights_only=False):
+                 save_weights_only=False, model_attributes=list()):
         """Initialize
 
         """
         super().__init__()
         self.saving_period = saving_period
         self.save_weights_only = save_weights_only
+        self.model_attributes = model_attributes
 
+        # self.config_path = saving_path_pattern + 'configs.json'
         self.saving_path_pattern = saving_path_prefix + '{name}_{epoch}'
         if self.save_weights_only:
             self.saving_path_pattern += '_weights.pt'
@@ -39,6 +43,7 @@ class ModelSaver(Observer):
     def update_on_training_start(self):
         """Calculate the number of the digits of the total number of epochs"""
         self._num_digits = len(str(self.observable.num_epochs))
+        # Configurations().save(self.config_path)
 
     def update_on_epoch_end(self):
         """Save the model every self.saving_period number of epochs"""
@@ -49,4 +54,14 @@ class ModelSaver(Observer):
                 if self.save_weights_only:
                     torch.save(model.state_dict(), fn)
                 else:
-                    torch.save(model, fn)
+                    opti = self.observable.optimizer
+                    model_attributes = {key: getattr(model, key)
+                                        for key in self.model_attributes}
+                    configs = vars(Configurations())
+                    contents = {'configs': configs,
+                                'epoch': self.observable.epoch,
+                                'loss': self.observable.losses['loss'].mean,
+                                'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': opti.state_dict()}
+                    contents.update(model_attributes)
+                    torch.save(contents, fn)

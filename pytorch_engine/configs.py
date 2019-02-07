@@ -55,6 +55,27 @@ class Configurations(metaclass=Singleton):
         self._set_default('metrics', list())
         self._set_default('use_gpu', True)
 
+    def load_from_dict(self, attrs):
+        """Load the attributes from a dict
+
+        Args:
+            attrs (dict): The attributes
+
+        """
+        for key, value in attrs.items():
+            setattr(self, key, value)
+
+    def save(self, json_path):
+        """Save the configurations to a .json file
+
+        Args:
+            json_path (str): The path to the json file
+
+        """
+        with open(json_path, 'w') as json_file:
+            json.dump(vars(self), json_file)
+
+
     def _set_default(self, key, value):
         """Set default parameter
         
