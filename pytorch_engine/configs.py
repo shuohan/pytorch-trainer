@@ -53,6 +53,7 @@ class Configurations(metaclass=Singleton):
         self._set_default('global_pool', 'average')
         self._set_default('decimals', 4)
         self._set_default('metrics', list())
+        self._set_default('use_gpu', True)
 
     def _set_default(self, key, value):
         """Set default parameter

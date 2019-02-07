@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 
+from ..configs import Configurations
 from .evaluator import Evaluator
 
 
@@ -54,15 +55,14 @@ class Observable:
         _observers (list): The observers to notify
 
     """
-    def __init__(self, data_loader, num_epochs=100, num_batches=10,
-                use_gpu=True):
+    def __init__(self, data_loader, num_epochs=100, num_batches=10):
         """Initialize
         
         """
         self.data_loader = data_loader
         self.num_epochs = num_epochs
         self.num_batches = num_batches
-        self.use_gpu = use_gpu
+        self.use_gpu = Configurations().use_gpu
 
         self.models = OrderedDict()
         self.losses = OrderedDict()
