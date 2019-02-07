@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import torch
+from torch import sigmoid
+from torch.nn.functional import softmax
 from collections import OrderedDict
 from functools import partial
 
@@ -31,29 +33,40 @@ class MetricFuncs:
             return partial(calc_dice, channel_ids=indices)
 
 
-def calc_dice(image1, image2, channel_ids=[0]):
+def calc_dice(input, target, channel_ids=[0]):
     """Calculate arerage Dice coefficients across specified channels
 
     Args:
-        image1, image2 (torch.Tensor): The images to calculate Dice between
+        input, target (torch.Tensor): The images to calculate Dice between
         channel_ids (list): The channels to calculate Dice from
 
     Returns:
         dice (float): The Dice
 
     """
+    input_tmp = input[:, channel_ids, ...]
+    target_tmp = target[:, channel_ids, ...]
+
     configs = Configurations()
     if configs.num_dims == 2:
         dim = (-2, -1)
+        if len(target_tmp.shape) == 4 and target_tmp.shape[1] > 1:
+            input_tmp = softmax(input_tmp, dim=1)
+        else:
+            input_tmp = sigmoid(input_tmp)
     elif configs.num_dims == 3:
         dim = (-3, -2, -1)
-    image1_tmp = image1[:, channel_ids, ...]
-    image2_tmp = image2[:, channel_ids, ...]
-    intersection = torch.sum(image1_tmp * image2_tmp, dim=dim)
-    sum1 = torch.sum(image1_tmp, dim=dim)
-    sum2 = torch.sum(image2_tmp, dim=dim)
+        if len(target_tmp.shape) == 5 and target_tmp.shape[1] > 1:
+            input_tmp = softmax(input_tmp, dim=1)
+        else:
+            input_tmp = sigmoid(input_tmp)
+
+    intersection = torch.sum(input_tmp * target_tmp, dim=dim)
+    sum1 = torch.sum(input_tmp, dim=dim)
+    sum2 = torch.sum(target_tmp, dim=dim)
     dices = 2 * intersection / (sum1 + sum2)
     dice = torch.mean(dices)
+
     return dice
 
 
