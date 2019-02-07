@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from .observer import Observer
+from ..configs import Configurations
+configs = Configurations()
 
 
 class Printer(Observer):
@@ -38,6 +40,10 @@ class Printer(Observer):
         pattern = '%s %%0%dd/%d' % (prefix, num_digits, total_num)
         return pattern
 
+    def _calc_value_pattern(self):
+        pattern = '%%s %%.%df' % configs.decimals
+        return pattern
+
     def update_on_batch_end(self):
         """Print the training progress message"""
         if self.show_batch:
@@ -47,16 +53,16 @@ class Printer(Observer):
             message.append(ep % (self.observable.epoch + 1))
             message.append(bp % (self.observable.batch + 1))
             for key, value in self.observable.losses.items():
-                message.append('%s %g' % (key, value.current))
+                message.append(self._calc_value_pattern() % (key,value.current))
             for key, value in self.observable.evaluator.results.items():
-                message.append('%s %g' % (key, value.current))
+                message.append(self._calc_value_pattern() % (key,value.current))
             print(', '.join(message))
 
     def update_on_epoch_end(self):
         message = [self.prefix]
         for key, value in self.observable.losses.items():
-            message.append('%s %g' % (key, value.mean))
+            message.append(self._calc_value_pattern() % (key, value.mean))
         for key, value in self.observable.evaluator.results.items():
-            message.append('%s %g' % (key, value.mean))
+            message.append(self._calc_value_pattern() % (key, value.mean))
         print(', '.join(message))
         print('-' * 80)
