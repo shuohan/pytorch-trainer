@@ -1,42 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from torch.nn import Conv2d, Conv3d, ConvTranspose2d, ConvTranspose3d
-
-from ..configs import Configurations
+from ..configs import Config
 
 
-configs = Configurations()
-if configs.num_dims == 2:
-    Conv = Conv2d
-    ConvTranspose = ConvTranspose2d
-elif configs.num_dims == 3:
-    Conv = Conv3d
-    ConvTranspose = ConvTranspose3d
+def create_conv(in_channels, out_channels, kernel_size, **kwargs):
+    config = Config()
+    if config.dim == 2:
+        from torch.nn import Conv2d
+        return Conv2d(in_channels, out_channels, kernel_size, **kwargs)
+    elif config.dim == 3:
+        from torch.nn import Conv3d
+        return Conv3d(in_channels, out_channels, kernel_size, **kwargs)
 
 
-class TwoConvTranspose(ConvTranspose):
-    """Transposed convolution with kernel 2"""
-
-    def __init__(self, in_channels, out_channels, **kwargs):
-        """Initliaze
-        
-        Args:
-            in_channels (int): The number of input channels
-            out_channels (int): The number of output channels
-            kwargs (dict): See other settings in PyTorch doc
-
-        """
-        super().__init__(in_channels, out_channels, 2, **kwargs)
+def create_conv_trans(in_channels, out_channels, kernel_size, **kwargs):
+    config = Config()
+    if config.dim == 2:
+        from torch.nn import ConvTranspose2d
+        return ConvTranspose2d(*args, **kwargs)
+    elif config.dim == 3:
+        from torch.nn import ConvTranspose2d
+        return ConvTranspose3d(*args, **kwargs)
 
 
-class ThreeConv(Conv):
-    """Convolution with kernel_size == 3 and 'same' padding"""
-    def __init__(self, in_channels, out_channels, **kwargs): 
-        super().__init__(in_channels, out_channels, 3, padding=1, **kwargs)
+def create_proj(in_channels, out_channels, **kwargs):
+    return create_conv(in_channels, out_channels, 1, **kwargs)
 
 
-class ProjConv(Conv):
-    """Convolution with kernel_size == 1"""
-    def __init__(self, in_channels, out_channels, **kwargs): 
-        super().__init__(in_channels, out_channels, 1, **kwargs)
+def create_three_conv(in_channels, out_channels, **kwargs):
+    return create_conv(in_channels, out_channels, 3, padding=1, **kwargs)

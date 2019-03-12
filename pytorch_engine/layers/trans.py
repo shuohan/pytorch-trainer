@@ -1,63 +1,25 @@
 # -*- coding: utf-8 -*-
 
 from torch.nn import Module
-from torch.nn import MaxPool2d, MaxPool3d, AvgPool2d, AvgPool3d
-from torch.nn import AdaptiveMaxPool2d, AdaptiveMaxPool3d
-from torch.nn import AdaptiveAvgPool2d, AdaptiveAvgPool3d
 from torch.nn.functional import interpolate
 
-from ..configs import Configurations
+from ..configs import Config
+
+from torch.nn import AdaptiveMaxPool2d, AdaptiveMaxPool3d
+from torch.nn import AdaptiveAvgPool2d, AdaptiveAvgPool3d
 
 
-configs = Configurations()
-
-if configs.num_dims == 2:
-    MaxPool = MaxPool2d
-    AvgPool = AvgPool2d
-    AdaptiveMaxPool = AdaptiveMaxPool2d
-    AdaptiveAvgPool = AdaptiveAvgPool2d
-elif configs.num_dims == 3:
-    MaxPool = MaxPool3d
-    AvgPool = AvgPool3d
-    AdaptiveMaxPool = AdaptiveMaxPool3d
-    AdaptiveAvgPool = AdaptiveAvgPool3d
-
-if configs.pool == 'max':
-    Pool = MaxPool
-elif configs.pool == 'average':
-    Pool = AvgPool
-
-if configs.global_pool == 'max':
-    AdaptivePool = AdaptiveMaxPool
-elif configs.global_pool == 'average':
-    AdaptivePool = AdaptiveAvgPool
-
-class GlobalPool(AdaptivePool):
-    """Spatial global pooling"""
-    def __init__(self):
-        super().__init__(1)
-
-
-class Upsample(Module):
-    """Customized Upsample
-
-    See torch.nn.Upsample for more details.
+class Interpolate(Module):
+    """Wrapper of torch.nn.functionals.interpolate
 
     """
-    def __init__(self, size=None, scale_factor=None):
+    def __init__(self, size=None, scale_factor=None, mode='nearest',
+                 align_corners=None):
         super().__init__()
         self.size = size
         self.scale_factor = scale_factor
-        if configs.upsample_mode == 'linear':
-            if configs.num_dims == 2:
-                self.mode = 'bilinear'
-            elif configs.num_dims == 3:
-                self.mode = 'trilinear'
-        elif configs.upsample_mode == 'nearest':
-            self.mode = 'nearest'
-        self.align_corners = configs.upsample_align_corners
-        if 'linear' not in self.mode:
-            self.align_corners = None
+        self.mode = mode
+        self.align_corners = align_corners
 
     def forward(self, input):
         output = interpolate(input, size=self.size,
@@ -71,4 +33,65 @@ class Upsample(Module):
         else:
             info = 'size=' + str(self.size)
         info += ', mode=' + self.mode
+        info += ', align_corners=' + str(self.align_corners)
         return info
+
+
+def create_pool(kernel_size, **kwargs):
+    config = Config()
+    paras = config.pool.copy()
+    paras.pop('name')
+    if config.pool['name'] == 'max':
+        if config.dim == 2:
+            from torch.nn import MaxPool2d
+            return MaxPool2d(kernel_size, **paras, **kwargs)
+        elif config.dim == 3:
+            from torch.nn import MaxPool3d
+            return MaxPool3d(kernel_size, **paras, **kwargs)
+    elif config.pool['name'] == 'avg':
+        if config.dim == 2:
+            from torch.nn import AvgPool2d
+            return AvgPool2d(kernel_size, **paras, **kwargs)
+        elif config.dim == 3:
+            from torch.nn import AvgPool3d
+            return AvgPool3d(kernel_size, **paras, **kwargs)
+
+
+def create_three_pool(**kwargs):
+    return create_pool(3, **kwargs)
+
+
+def create_global_pool(**kwargs):
+    config = Config()
+    if config.global_pool == 'max':
+        if config.dim == 2:
+            from torch.nn import AdaptiveMaxPool2d
+            return AdaptiveMaxPool2d(1, **kwargs)
+        elif config.dim == 3:
+            from torch.nn import AdaptiveMaxPool3d
+            return AdaptiveMaxPool3d(1, **kwargs)
+    elif configs.global_pool == 'avg':
+        if config.dim == 2:
+            from torch.nn import AdaptiveAvgPool2d
+            return AdaptiveAvgPool2d(1)
+        elif config.dim == 3:
+            from torch.nn import AdaptiveAvgPool3d
+            return AdaptiveAvgPool3d(1)
+
+
+def create_interpolate(size=None, scale_factor=None):
+    config = Config()
+    if config.upsample['name'] == 'linear':
+        if config.dim == 2:
+            mode = 'bilinear'
+        elif config.dim == 3:
+            mode = 'trilinear'
+    elif config.upsample['name'] == 'nearest':
+        mode = 'nearest'
+        config.upsample['align_corners'] = None
+    return Interpolate(size=size, scale_factor=scale_factor, mode=mode,
+                       align_corners=config.upsample.get('align_corners'))
+
+
+def create_two_upsample():
+    return create_interpolate(scale_factor=2)

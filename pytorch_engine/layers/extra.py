@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from torch.nn import Dropout3d, Dropout2d
-
-from ..configs import Configurations
+from ..configs import Config
 
 
-configs = Configurations()
-
-if configs.num_dims == 2:
-    Dropout_ = Dropout2d
-elif configs.num_dims == 3:
-    Dropout_ = Dropout3d
-
-
-class Dropout(Dropout_):
-    """Customized dropout layer"""
-
-    def __init__(self):
-        super().__init__(configs.dropout_rate)
+def create_dropout():
+    config = Config()
+    if config.dim == 2:
+        from torch.nn import Dropout2d
+        return Dropout2d(config.dropout_rate)
+    elif config.dim == 3:
+        from torch.nn import Dropout3d
+        return Dropout3d(config.dropout_rate)

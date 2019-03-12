@@ -19,7 +19,8 @@ class Config(Config_):
         max_channels (int): The maximum number of feature maps/channels
         upsample (dict): Parameters of upsample; it has a `name` key for the
             type of upsampling mode {'nearest', 'linear'}
-        pool (str): The type of pooling (max or average)
+        pool (dict): Parameters of pooling; it has key `name` for the type of
+            pooling (e.g. 'max', 'avg')
         global_pool (str): The type of globale pooling (max or average)
         decimals (int): The number of decimals of the recorded metrics/loss for
             printing and logging
@@ -41,16 +42,16 @@ class Config(Config_):
         """
         super().__init__(config_json)
 
-        self._set_default('num_dims', 3)
+        self._set_default('dim', 3)
         self._set_default('kernel_init', 'kaiming_normal')
         self._set_default('norm', {'name': 'instance'})
-        self._set_default('activ_para', {'name': 'relu'})
+        self._set_default('activ', {'name': 'relu'})
         self._set_default('dropout_rate', 0.2)
         self._set_default('max_channels', 512)
         self._set_default('upsample', {'name': 'nearest',
-                                       'align_coners': False})
-        self._set_default('pool', 'max')
-        self._set_default('global_pool', 'average')
+                                       'align_corners': False})
+        self._set_default('pool', {'name', 'max'})
+        self._set_default('global_pool', 'avg')
         self._set_default('decimals', 4)
         self._set_default('metrics', list())
         self._set_default('use_gpu', True)

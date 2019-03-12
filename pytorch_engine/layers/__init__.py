@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from .activ import Activation
-from .norm import Normalization
-from .conv import Conv, ProjConv, ThreeConv
-from .trans import Pool, GlobalPool, Upsample
-from .extra import Dropout
+from .activ import create_activ
+from .norm import create_norm
+from .conv import create_conv, create_conv_trans, create_proj, create_three_conv
+from .trans import create_pool, create_three_pool, create_global_pool
+from .trans import create_interpolate, create_two_upsample
+from .extra import create_dropout

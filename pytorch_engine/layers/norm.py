@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from torch.nn import InstanceNorm2d, InstanceNorm3d, BatchNorm2d, BatchNorm3d
-
-from ..configs import Configurations
+from ..configs import Config
 
 
-configs = Configurations()
-
-if configs.num_dims == 2:
-    InstanceNorm = InstanceNorm2d
-    BatchNorm = BatchNorm2d
-elif configs.num_dims == 3:
-    InstanceNorm = InstanceNorm3d
-    BatchNorm = BatchNorm3d
-
-if configs.norm == 'instance':
-    Normalization = InstanceNorm
-elif configs.norm == 'batch':
-    Normalization = BatchNorm
+def create_norm(num_features):
+    config = Config()
+    paras = config.norm.copy()
+    paras.pop('name')
+    if config.dim == 2:
+        if config.norm['name'] == 'instance':
+            from torch.nn import InstanceNorm2d
+            return InstanceNorm2d(num_features, **paras)
+        elif config.norm['name'] == 'batch':
+            from torch.nn import BatchNorm2d
+            return BatchNorm2d(num_features, **paras)
+    elif config.dim == 3:
+        if config.norm['name'] == 'instance':
+            from torch.nn import InstanceNorm3d
+            return InstanceNorm3d(num_features, **paras)
+        elif config.norm['name'] == 'batch':
+            from torch.nn import BatchNorm3d
+            return BatchNorm3d(num_features, **paras)
