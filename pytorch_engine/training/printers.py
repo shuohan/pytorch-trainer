@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from .observer import Observer
-from ..configs import Configurations
-configs = Configurations()
 
 
 class Printer(Observer):

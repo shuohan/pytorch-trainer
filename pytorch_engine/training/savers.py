@@ -4,7 +4,7 @@
 import torch
 import os
 from .observer import Observer
-from ..configs import Configurations
+from ..configs import Config
 
 
 class ModelSaver(Observer):
@@ -57,7 +57,7 @@ class ModelSaver(Observer):
                     opti = self.observable.optimizer
                     model_attributes = {key: getattr(model, key)
                                         for key in self.model_attributes}
-                    configs = vars(Configurations())
+                    configs = vars(Config())
                     contents = {'configs': configs,
                                 'epoch': self.observable.epoch,
                                 'loss': self.observable.losses['loss'].mean,

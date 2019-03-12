@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 
-from ..configs import Configurations
+from ..configs import Config
 from .evaluator import Evaluator
 
 
@@ -62,7 +62,7 @@ class Observable:
         self.data_loader = data_loader
         self.num_epochs = num_epochs
         self.num_batches = num_batches
-        self.use_gpu = Configurations().use_gpu
+        self.use_gpu = Config().use_gpu
 
         self.models = OrderedDict()
         self.losses = OrderedDict()

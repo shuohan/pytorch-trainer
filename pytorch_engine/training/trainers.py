@@ -6,7 +6,6 @@ import torch
 
 from .buffer import Buffer
 from .observer import Observable
-from ..configs import Configurations
 
 
 class Trainer(Observable):

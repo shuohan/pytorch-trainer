@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import torch
-from torch import sigmoid
-from torch.nn.functional import softmax
 from collections import OrderedDict
 from functools import partial
 
 from .buffer import Buffer
 from ..loss import calc_aver_dice
-from ..configs import Configurations
+from ..configs import Config
 
 
 class MetricFuncs:
@@ -30,44 +28,7 @@ class MetricFuncs:
                     indices += range(ind[0], ind[1]+1)
                 else:
                     indices += ind
-            return partial(calc_dice, channel_ids=indices)
-
-
-def calc_dice(input, target, channel_ids=[0]):
-    """Calculate arerage Dice coefficients across specified channels
-
-    Args:
-        input, target (torch.Tensor): The images to calculate Dice between
-        channel_ids (list): The channels to calculate Dice from
-
-    Returns:
-        dice (float): The Dice
-
-    """
-    input_tmp = input[:, channel_ids, ...]
-    target_tmp = target[:, channel_ids, ...]
-
-    configs = Configurations()
-    if configs.num_dims == 2:
-        dim = (-2, -1)
-        if len(target_tmp.shape) == 4 and target_tmp.shape[1] > 1:
-            input_tmp = softmax(input_tmp, dim=1)
-        else:
-            input_tmp = sigmoid(input_tmp)
-    elif configs.num_dims == 3:
-        dim = (-3, -2, -1)
-        if len(target_tmp.shape) == 5 and target_tmp.shape[1] > 1:
-            input_tmp = softmax(input_tmp, dim=1)
-        else:
-            input_tmp = sigmoid(input_tmp)
-
-    intersection = torch.sum(input_tmp * target_tmp, dim=dim)
-    sum1 = torch.sum(input_tmp, dim=dim)
-    sum2 = torch.sum(target_tmp, dim=dim)
-    dices = 2 * intersection / (sum1 + sum2)
-    dice = torch.mean(dices)
-
-    return dice
+            return partial(calc_aver_dice, channel_indices=indices)
 
 
 class Evaluator:
@@ -81,15 +42,13 @@ class Evaluator:
 
     """
     def __init__(self, buffer_length):
-        configs = Configurations()
+        config = Config()
         self._funcs = OrderedDict()
         self.results = OrderedDict()
-        self.metric_names = list()
         metric_funcs = MetricFuncs()
         for name in configs.metrics:
             self._funcs[name] = metric_funcs[name]
             self.results[name] = Buffer(buffer_length)
-            self.metric_names.append(name)
 
     def evaluate(self, prediction, truth):
         """Evaluate the model using prediction and the corresponding truth
