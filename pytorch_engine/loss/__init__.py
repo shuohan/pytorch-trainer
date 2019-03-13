@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from .dice import calc_aver_dice, DiceLoss
+from .dice import DiceLoss, SquaredDiceLoss
 from ..configs import Config
 
 def create_loss(**kwargs):
     config = Config()
-    if config.loss['name'] == 'dice':
+    if config.loss == 'dice':
         return DiceLoss(**kwargs)
+    elif config.loss == 'squared_dice':
+        return SquaredDiceLoss(**kwargs)
+    else:
+        raise RuntimeError

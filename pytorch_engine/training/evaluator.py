@@ -5,8 +5,8 @@ from collections import OrderedDict
 from functools import partial
 
 from .buffer import Buffer
-from ..loss import calc_aver_dice
 from ..configs import Config
+from ..funcs import calc_dice
 
 
 class MetricFuncs:
@@ -19,7 +19,7 @@ class MetricFuncs:
     """
     def __getitem__(self, key):
         if key == 'dice':
-            return calc_aver_dice
+            return calc_dice
         elif key.startswith('dice'):
             indices = list()
             for r in key.split('_')[1:]:
@@ -28,7 +28,7 @@ class MetricFuncs:
                     indices += range(ind[0], ind[1]+1)
                 else:
                     indices += ind
-            return partial(calc_aver_dice, channel_indices=indices)
+            return partial(calc_dice, channel_indices=indices)
 
 
 class Evaluator:
