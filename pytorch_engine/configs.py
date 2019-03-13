@@ -44,7 +44,7 @@ class Config(Config_):
 
         self._set_default('dim', 3)
         self._set_default('kernel_init', 'kaiming_normal')
-        self._set_default('norm', {'name': 'instance'})
+        self._set_default('norm', {'name': 'instance', 'affine': True})
         self._set_default('activ', {'name': 'relu'})
         self._set_default('dropout_rate', 0.2)
         self._set_default('max_channels', 512)
