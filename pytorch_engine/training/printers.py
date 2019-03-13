@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .observer import Observer
+from ..configs import Config
 
 
 class Printer(Observer):
@@ -39,7 +40,7 @@ class Printer(Observer):
         return pattern
 
     def _calc_value_pattern(self):
-        pattern = '%%s %%.%df' % configs.decimals
+        pattern = '%%s %%.%df' % Config().decimals
         return pattern
 
     def update_on_batch_end(self):

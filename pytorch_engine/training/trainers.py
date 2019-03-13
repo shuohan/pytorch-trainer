@@ -32,6 +32,8 @@ class Trainer(Observable):
     def _train_on_epoch(self):
         """Train the model for each epoch"""
         for self.batch, (input, truth) in enumerate(self.data_loader):
+            input = input.float()
+            truth = truth.long()
             self._notify_observers_on_batch_start()
             self._train_on_batch(input, truth)
             self._notify_observers_on_batch_end()
@@ -113,7 +115,7 @@ class GANTrainer(Trainer):
 
         """
         source = source.float()
-        target = target.float()
+        target = target.long()
         if self.use_gpu:
             source = source.cuda()
             target = target.cuda()

@@ -54,7 +54,7 @@ class BasicLogger(Logger):
 
     def _write_header(self):
         header = ['epoch'] + list(self.losses.keys())
-        header += self.evaluator.metric_names
+        header += self.evaluator.results.keys()
         header = ','.join(header) + '\n'
         self.file.write(header)
         self.file.flush()

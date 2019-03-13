@@ -36,7 +36,7 @@ class Validator(Observable, Observer):
                 model.eval()
             for input, truth in self.data_loader:
                 input = input.float()
-                truth = truth.float()
+                truth = truth.long()
                 if self.observable.use_gpu:
                     input = input.cuda()
                     truth = truth.cuda()

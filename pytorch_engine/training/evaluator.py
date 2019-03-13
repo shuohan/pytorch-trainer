@@ -46,7 +46,7 @@ class Evaluator:
         self._funcs = OrderedDict()
         self.results = OrderedDict()
         metric_funcs = MetricFuncs()
-        for name in configs.metrics:
+        for name in config.metrics:
             self._funcs[name] = metric_funcs[name]
             self.results[name] = Buffer(buffer_length)
 
