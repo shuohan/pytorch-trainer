@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-import json
 from config import Config_
 
 
@@ -27,6 +25,9 @@ class Config(Config_):
         metrics (list of str): The metrics used to evaluate the network during
             training and validation
         use_gpu (bool): If True, use GPU; otherwise, use CPU
+        loss (str): The type of the loss
+        encode_output (bool): If True, apply softmax/sigmoid to the model output
+        eps (float): A small number
 
         _loaded (dict): Loaded configs from .json file
         _attrs (list of str): A list of the configurations for printing
@@ -50,7 +51,7 @@ class Config(Config_):
         self._set_default('max_channels', 512)
         self._set_default('upsample', {'name': 'nearest',
                                        'align_corners': False})
-        self._set_default('pool', {'name', 'max'})
+        self._set_default('pool', {'name': 'max'})
         self._set_default('global_pool', 'avg')
         self._set_default('decimals', 4)
         self._set_default('metrics', list())
