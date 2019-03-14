@@ -4,7 +4,7 @@ import torch
 from torch import sigmoid
 from torch.nn.functional import softmax
 
-from .configs import Config
+from .config import Config
 
 
 def prob_encode(input):

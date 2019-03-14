@@ -4,7 +4,7 @@ import torch
 
 from .observer import Observer, Observable
 from .buffer import Buffer
-from ..configs import Config
+from ..config import Config
 from ..funcs import prob_encode
 
 

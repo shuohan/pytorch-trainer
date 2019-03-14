@@ -7,7 +7,7 @@ import torch
 from .buffer import Buffer
 from .observer import Observable
 from ..funcs import prob_encode
-from ..configs import Config
+from ..config import Config
 
 
 class Trainer(Observable):

@@ -3,10 +3,7 @@
 from torch.nn import Module
 from torch.nn.functional import interpolate
 
-from ..configs import Config
-
-from torch.nn import AdaptiveMaxPool2d, AdaptiveMaxPool3d
-from torch.nn import AdaptiveAvgPool2d, AdaptiveAvgPool3d
+from ..config import Config
 
 
 class Interpolate(Module):

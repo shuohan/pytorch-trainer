@@ -3,7 +3,7 @@
 import numpy as np
 from collections import OrderedDict
 
-from ..configs import Config
+from ..config import Config
 
 
 class Buffer:

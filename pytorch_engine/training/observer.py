@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 
-from ..configs import Config
+from ..config import Config
 from .evaluator import Evaluator
 
 

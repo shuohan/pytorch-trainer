@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from ..configs import Config
+from ..config import Config
 
 
 def create_conv(in_channels, out_channels, kernel_size, **kwargs):

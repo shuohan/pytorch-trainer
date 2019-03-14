@@ -5,7 +5,7 @@ from collections import OrderedDict
 from functools import partial
 
 from .buffer import Buffer
-from ..configs import Config
+from ..config import Config
 from ..funcs import calc_dice
 
 

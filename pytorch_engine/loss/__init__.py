@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .dice import DiceLoss, SquaredDiceLoss
-from ..configs import Config
+from ..config import Config
 
 def create_loss(**kwargs):
     config = Config()

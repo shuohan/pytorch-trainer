@@ -4,7 +4,7 @@
 import torch
 import os
 from .observer import Observer
-from ..configs import Config
+from ..config import Config
 
 
 class ModelSaver(Observer):
