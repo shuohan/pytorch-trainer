@@ -156,3 +156,7 @@ def calc_dice(input, target, channel_indices=None):
         target_onehot = target_onehot[:, channel_indices, ...]
     dices = _calc_dices(input_seg, target_onehot, eps=0)
     return torch.mean(dices)
+
+
+def count_trainable_paras(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
