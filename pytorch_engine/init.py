@@ -51,7 +51,8 @@ def xavier_uniform(module):
 
 def init_conv_bias(module):
     if isinstance(module, _ConvNd):
-        constant_(module.bias, 0)
+        if module.bias is not None:
+            constant_(module.bias, 0)
 
 
 def init_norm(module):
