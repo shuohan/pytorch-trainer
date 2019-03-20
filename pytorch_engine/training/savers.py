@@ -42,7 +42,7 @@ class ModelSaver(Observer):
             torch.save(contents, filepath)
 
     def _get_saving_path(self):
-        epoch = ('%%0%dd' % self._num_digits) % self.observable.epoch
+        epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
         filepath = self.saving_path_pattern.format(epoch=epoch)
         return filepath
 
