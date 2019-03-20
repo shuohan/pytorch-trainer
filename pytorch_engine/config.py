@@ -59,3 +59,5 @@ class Config(Config_):
         self._set_default('use_gpu', True)
         self._set_default('encode_output', True)
         self._set_default('eps', 1e-8)
+        self._set_default('weight_init', {'name': 'kaiming_normal',
+                                          'mode': 'fan_in'})
