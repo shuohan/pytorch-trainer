@@ -6,8 +6,6 @@ import torch
 
 from .buffer import Buffer
 from .observer import Observable
-from ..funcs import prob_encode
-from ..config import Config
 
 
 class Trainer(Observable):
@@ -72,8 +70,6 @@ class SimpleTrainer(Trainer):
             input = input.cuda()
             truth = truth.cuda()
         output = self.models['model'](input)
-        if Config().encode_output:
-            output = prob_encode(output)
         loss = self.loss_func(output, truth)
         self.optimizer.zero_grad()
         loss.backward()
