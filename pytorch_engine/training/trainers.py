@@ -32,9 +32,14 @@ class Trainer(Observable):
     def _train_on_epoch(self):
         """Train the model for each epoch"""
         for self.batch, (input, truth) in enumerate(self.data_loader):
+            if self.use_gpu:
+                input, truth = self._cuda(input, truth)
             self._notify_observers_on_batch_start()
             self._train_on_batch(input, truth)
             self._notify_observers_on_batch_end()
+
+    def _cuda(self, input, truth):
+        return input.cuda(), truth.cuda()
 
 
 class SimpleTrainer(Trainer):
@@ -64,9 +69,6 @@ class SimpleTrainer(Trainer):
             truth (torch.Tensor): The target/truth of the output of the model
 
         """
-        if self.use_gpu:
-            input = input.cuda()
-            truth = truth.cuda()
         output = self.models['model'](input)
         loss = self.loss_func(output, truth)
         self.optimizer.zero_grad()

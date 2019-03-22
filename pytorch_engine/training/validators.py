@@ -36,10 +36,12 @@ class Validator(Observable, Observer):
                 model.eval()
             for input, truth in self.data_loader:
                 if self.observable.use_gpu:
-                    input = input.cuda()
-                    truth = truth.cuda()
+                    input, truth = self._cuda(input, truth)
                 self._validate(input, truth)
         self._notify_observers_on_epoch_end()
+
+    def _cuda(self, input, truth):
+        return input.cuda(), truth.cuda()
 
     def update_on_training_end(self):
         self._notify_observers_on_training_end()
