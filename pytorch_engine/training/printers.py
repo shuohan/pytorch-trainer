@@ -55,7 +55,7 @@ class Printer(Observer):
                 message.append(self._calc_value_pattern() % (key,value.current))
             for key, value in self.observable.evaluator.results.items():
                 message.append(self._calc_value_pattern() % (key,value.current))
-            print(', '.join(message))
+            print(', '.join(message), flush=True)
 
     def update_on_epoch_end(self):
         message = [self.prefix]
@@ -63,5 +63,5 @@ class Printer(Observer):
             message.append(self._calc_value_pattern() % (key, value.mean))
         for key, value in self.observable.evaluator.results.items():
             message.append(self._calc_value_pattern() % (key, value.mean))
-        print(', '.join(message))
-        print('-' * 80)
+        print(', '.join(message), flush=True)
+        print('-' * 80, flush=True)
