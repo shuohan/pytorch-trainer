@@ -23,5 +23,8 @@ class DiceLoss(_WeightedLoss):
         super().__init__(weight=weight)
     def forward(self, input, target):
         input = prob_encode(input)
-        target_onehot = one_hot(target, input.shape)
+        if input.shape[1] > 2:
+            target_onehot = one_hot(target, input.shape)
+        else:
+            target_onehot = target.float()
         return calc_dice_loss(input, target_onehot, weight=self.weight)
