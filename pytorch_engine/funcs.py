@@ -149,6 +149,7 @@ def calc_dice(input, target, channel_indices=None):
         dice (torch.Tensor): The average Dice
 
     """
+    input = prob_encode(input)
     input_seg = one_hot(torch.argmax(input, dim=1, keepdim=True), input.shape)
     target_onehot = one_hot(target, input.shape)
     if channel_indices is not None:
