@@ -6,6 +6,7 @@ import torch
 
 from .buffer import Buffer
 from .observer import Observable
+from ..config import Config
 
 
 class Trainer(Observable):
@@ -70,9 +71,13 @@ class SimpleTrainer(Trainer):
 
         """
         output = self.models['model'](input)
-        loss = self.loss_func(output, truth)
+        loss_raw = self.loss_func(output, truth)
+        if Config().eval_separate:
+            loss = torch.mean(loss_raw)
+        else:
+            loss = loss_raw
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self.losses['loss'].append(loss.item())
-        self.evaluator.evaluate(output, truth)
+        self.losses['loss'].append(loss_raw.detach().cpu().numpy())
+        # self.evaluator.evaluate(output, truth)

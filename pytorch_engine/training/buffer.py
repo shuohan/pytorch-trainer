@@ -21,7 +21,7 @@ class Buffer:
     def __init__(self, max_length):
         self.decimals = Config().decimals
         self.max_length = max_length
-        self._buffer = np.zeros(max_length, dtype=float)
+        self._buffer = [None] * self.max_length
         self._ind = -1
 
     def __len__(self):
@@ -44,6 +44,12 @@ class Buffer:
             return float('nan')
         else:
             return np.round(np.mean(self._buffer[:self._ind+1]), self.decimals)
+
+    @property
+    def all(self):
+        all = np.round(self._buffer[:self._ind+1], self.decimals)
+        all = np.vstack(all)
+        return all
 
     def append(self, current):
         """Add the current value"""

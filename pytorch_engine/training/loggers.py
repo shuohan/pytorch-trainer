@@ -3,6 +3,7 @@
 import os
 
 from .observer import Observer
+from ..config import Config
 
 
 class Logger(Observer):
@@ -39,22 +40,36 @@ class BasicLogger(Logger):
     """
     def update_on_training_start(self):
         self.losses = self.observable.losses
-        self.evaluator = self.observable.evaluator
+        # self.evaluator = self.observable.evaluator
         super().update_on_training_start()
 
     def update_on_epoch_end(self):
-        line = '%d' % (self.observable.epoch + 1)
-        for losses in self.losses.values():
-            line += ',%g' % losses.mean
-        for value in self.evaluator.results.values():
-            line = '%s,%g' % (line, value.mean)
-        line += '\n'
-        self.file.write(line)
-        self.file.flush()
+        line_s = '%d' % (self.observable.epoch + 1)
+        for value in self.losses.values():
+            if Config().eval_separate:
+                current = value.all
+                for sample_id, sample in enumerate(current):
+                    for channel_id, channel in enumerate(sample):
+                        line = line_s
+                        line += ',%d' % (sample_id + 1)
+                        line += ',%d' % (channel_id + 1)
+                        line += ',%g' % channel
+                        line += '\n'
+                        self.file.write(line)
+                        self.file.flush()
+            else:
+                line = line_s + ',%g' % value.mean
+                self.file.write(line)
+                self.file.flush()
+        # for value in self.evaluator.results.values():
+        #     line = '%s,%g' % (line, value.mean)
 
     def _write_header(self):
-        header = ['epoch'] + list(self.losses.keys())
-        header += self.evaluator.results.keys()
+        if Config().eval_separate:
+            header = ['epoch', 'sample', 'channel'] + list(self.losses.keys())
+        else:
+            header = ['epoch'] + list(self.losses.keys())
+        # header += self.evaluator.results.keys()
         header = ','.join(header) + '\n'
         self.file.write(header)
         self.file.flush()

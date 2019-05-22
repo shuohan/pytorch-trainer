@@ -52,16 +52,28 @@ class Printer(Observer):
             message.append(ep % (self.observable.epoch + 1))
             message.append(bp % (self.observable.batch + 1))
             for key, value in self.observable.losses.items():
-                message.append(self._calc_value_pattern() % (key,value.current))
-            for key, value in self.observable.evaluator.results.items():
-                message.append(self._calc_value_pattern() % (key,value.current))
-            print(', '.join(message), flush=True)
+                current = value.current
+                if current.size > 1:
+                    space = ' ' * (len(', '.join(message)) + 2)
+                    sp = self._calc_pattern('sample', current.shape[0])
+                    cp = self._calc_pattern('channel', current.shape[1])
+                    for sample_id, sample in enumerate(current):
+                        for channel_id, channel in enumerate(sample):
+                            tmp = message.copy()
+                            tmp.append(sp % (sample_id + 1))
+                            tmp.append(cp % (channel_id + 1))
+                            tmp.append(('%%.%df' % Config().decimals) % channel)
+                            print(', '.join(tmp), flush=True)
+                # message.append(self._calc_value_pattern() % (key,value.current))
+            # for key, value in self.observable.evaluator.results.items():
+            #     message.append(self._calc_value_pattern() % (key,value.current))
+            # print(', '.join(message), flush=True)
 
     def update_on_epoch_end(self):
         message = [self.prefix]
         for key, value in self.observable.losses.items():
             message.append(self._calc_value_pattern() % (key, value.mean))
-        for key, value in self.observable.evaluator.results.items():
-            message.append(self._calc_value_pattern() % (key, value.mean))
+        # for key, value in self.observable.evaluator.results.items():
+        #     message.append(self._calc_value_pattern() % (key, value.mean))
         print(', '.join(message), flush=True)
         print('-' * 80, flush=True)

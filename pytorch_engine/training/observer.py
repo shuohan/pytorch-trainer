@@ -3,7 +3,7 @@
 from collections import OrderedDict
 
 from ..config import Config
-from .evaluator import Evaluator
+# from .evaluator import Evaluator
 
 
 class Observer:
@@ -66,7 +66,7 @@ class Observable:
 
         self.models = OrderedDict()
         self.losses = OrderedDict()
-        self.evaluator = Evaluator(self.num_batches)
+        # self.evaluator = Evaluator(self.num_batches)
 
         self.epoch = 0
         self.batch = 0

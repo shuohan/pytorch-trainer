@@ -5,6 +5,7 @@ import torch
 from torch.nn.modules.loss import _WeightedLoss
 
 from ..funcs import calc_squared_dice_loss, calc_dice_loss, one_hot, prob_encode
+from ..config import Config
 
 
 class SquaredDiceLoss(_WeightedLoss):
@@ -27,4 +28,6 @@ class DiceLoss(_WeightedLoss):
             target_onehot = one_hot(target, input.shape)
         else:
             target_onehot = target.float()
-        return calc_dice_loss(input, target_onehot, weight=self.weight)
+        average = not Config().eval_separate
+        return calc_dice_loss(input, target_onehot, weight=self.weight,
+                              average=average)
