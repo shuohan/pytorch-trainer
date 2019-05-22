@@ -55,13 +55,13 @@ class Observable:
         _observers (list): The observers to notify
 
     """
-    def __init__(self, data_loader, num_epochs=100, num_batches=10):
+    def __init__(self, data_loader, num_epochs=100):
         """Initialize
         
         """
         self.data_loader = data_loader
         self.num_epochs = num_epochs
-        self.num_batches = num_batches
+        self.num_batches = len(self.data_loader)
         self.use_gpu = Config().use_gpu
 
         self.models = OrderedDict()

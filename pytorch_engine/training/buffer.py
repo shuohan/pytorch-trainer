@@ -43,12 +43,11 @@ class Buffer:
             print(self.__class__, "is empty")
             return float('nan')
         else:
-            return np.round(np.mean(self._buffer[:self._ind+1]), self.decimals)
+            return np.round(np.mean(np.vstack(self._buffer[:self._ind+1])), self.decimals)
 
     @property
     def all(self):
-        all = np.round(self._buffer[:self._ind+1], self.decimals)
-        all = np.vstack(all)
+        all = np.round(np.vstack(self._buffer[:self._ind+1]), self.decimals)
         return all
 
     def append(self, current):

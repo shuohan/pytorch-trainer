@@ -17,10 +17,11 @@ class Validator(Observable, Observer):
         evaluator (.evaluator.Evaluator): Evaluate the model
 
     """
-    def __init__(self, data_loader, num_batches=10, saving_period=1):
+    def __init__(self, data_loader, saving_period=1):
         """Initialize"""
-        super().__init__(data_loader, None, num_batches)
+        super().__init__(data_loader, None)
         self.saving_period = saving_period
+        self.output = None
 
     def update_on_training_start(self):
         """Initialize the losses and evaluator"""
@@ -36,10 +37,11 @@ class Validator(Observable, Observer):
             with torch.no_grad():
                 for model in self.observable.models.values():
                     model.eval()
-                for input, truth in self.data_loader:
+                for self.batch, (input, truth) in enumerate(self.data_loader):
                     if self.observable.use_gpu:
                         input, truth = self._cuda(input, truth)
                     self._validate(input, truth)
+                    self._notify_observers_on_batch_end()
             self._notify_observers_on_epoch_end()
 
     def _cuda(self, input, truth):
@@ -63,6 +65,7 @@ class SimpleValidator(Validator):
     """Simple validator with only one model"""
     def _validate(self, input, truth):
         output = self.observable.models['model'](input)
+        self.output = output.cpu().detach()
         loss_raw = self.observable.loss_func(output, truth)
-        self.losses['loss'].append(loss_raw.detach().cpu().numpy())
+        self.losses['loss'].append(loss_raw.cpu().detach().numpy())
         # self.evaluator.evaluate(output, truth)
