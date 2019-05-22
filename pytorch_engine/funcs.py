@@ -136,7 +136,7 @@ def calc_squared_dice_loss(input, target, weight=None):
     return 1 - dice
 
 
-def calc_dice(input, target, channel_indices=None):
+def calc_dice(input, target, channel_indices=None, eps=0):
     """Calculate average Dice coefficients across samples and channels
 
     Args:
@@ -144,6 +144,7 @@ def calc_dice(input, target, channel_indices=None):
         target (torch.Tensor): The target tensor
         channel_indices (list of int): The channels to calculate dices across.
             If None, use all channels
+        eps (float): Small number preventing division by zero
 
     Returns:
         dice (torch.Tensor): The average Dice
@@ -155,7 +156,7 @@ def calc_dice(input, target, channel_indices=None):
     if channel_indices is not None:
         input_seg = input_seg[:, channel_indices, ...]
         target_onehot = target_onehot[:, channel_indices, ...]
-    dices = _calc_dices(input_seg, target_onehot, eps=0)
+    dices = _calc_dices(input_seg, target_onehot, eps=eps)
     return torch.mean(dices)
 
 

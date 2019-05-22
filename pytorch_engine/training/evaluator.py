@@ -18,8 +18,9 @@ class MetricFuncs:
 
     """
     def __getitem__(self, key):
+        config = Config()
         if key == 'dice':
-            return calc_dice
+            return partial(calc_dice, eps=config.eps)
         elif key.startswith('dice'):
             indices = list()
             for r in key.split('_')[1:]:
@@ -28,7 +29,7 @@ class MetricFuncs:
                     indices += range(ind[0], ind[1]+1)
                 else:
                     indices += ind
-            return partial(calc_dice, channel_indices=indices)
+            return partial(calc_dice, channel_indices=indices, eps=config.eps)
 
 
 class Evaluator:
