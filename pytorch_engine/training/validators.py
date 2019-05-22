@@ -17,9 +17,10 @@ class Validator(Observable, Observer):
         evaluator (.evaluator.Evaluator): Evaluate the model
 
     """
-    def __init__(self, data_loader, num_batches=10):
+    def __init__(self, data_loader, num_batches=10, saving_period=1):
         """Initialize"""
         super().__init__(data_loader, None, num_batches)
+        self.saving_period = saving_period
 
     def update_on_training_start(self):
         """Initialize the losses and evaluator"""
@@ -30,15 +31,16 @@ class Validator(Observable, Observer):
 
     def update_on_epoch_end(self):
         """Validate the model using the models"""
-        self.epoch = self.observable.epoch
-        with torch.no_grad():
-            for model in self.observable.models.values():
-                model.eval()
-            for input, truth in self.data_loader:
-                if self.observable.use_gpu:
-                    input, truth = self._cuda(input, truth)
-                self._validate(input, truth)
-        self._notify_observers_on_epoch_end()
+        self.epoch = self.observable.epoch # self.epoch is zero based index
+        if ((self.epoch + 1) % self.saving_period) == 0:
+            with torch.no_grad():
+                for model in self.observable.models.values():
+                    model.eval()
+                for input, truth in self.data_loader:
+                    if self.observable.use_gpu:
+                        input, truth = self._cuda(input, truth)
+                    self._validate(input, truth)
+            self._notify_observers_on_epoch_end()
 
     def _cuda(self, input, truth):
         return input.cuda(), truth.cuda()
