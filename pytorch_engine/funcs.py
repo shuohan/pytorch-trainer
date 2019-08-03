@@ -154,8 +154,12 @@ def calc_dice(input, target, channel_indices=None, eps=0):
 
     """
     input = prob_encode(input)
-    input_seg = one_hot(torch.argmax(input, dim=1, keepdim=True), input.shape)
-    target_onehot = one_hot(target, input.shape)
+    if input.shape[1] > 2:
+        input_seg = one_hot(torch.argmax(input, dim=1, keepdim=True), input.shape)
+        target_onehot = one_hot(target, input.shape)
+    else:
+        input_seg = (input >= 0.5).float()
+        target_onehot = target.float()
     if channel_indices is not None:
         input_seg = input_seg[:, channel_indices, ...]
         target_onehot = target_onehot[:, channel_indices, ...]
