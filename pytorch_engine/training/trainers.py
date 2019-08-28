@@ -6,6 +6,7 @@ import torch
 
 from .buffer import Buffer
 from .observer import Observable
+from ..config import Config
 
 
 class Trainer(Observable):
@@ -51,15 +52,16 @@ class SimpleTrainer(Trainer):
 
     """
     def __init__(self, model, loss_func, optimizer, data_loader,
-                 num_epochs=500, num_batches=20):
+                 num_epochs=500):
         """Initialize
         
         """
-        super().__init__(data_loader, num_epochs, num_batches)
+        super().__init__(data_loader, num_epochs)
         self.models['model'] = model if not self.use_gpu else model.cuda()
         self.losses['loss'] = Buffer(self.num_batches)
         self.loss_func = loss_func
         self.optimizer = optimizer
+        self.output = None
 
     def _train_on_batch(self, input, truth):
         """Train the model for each batch
@@ -70,9 +72,14 @@ class SimpleTrainer(Trainer):
 
         """
         output = self.models['model'](input)
-        loss = self.loss_func(output, truth)
+        self.output = output.cpu().detach()
+        loss_raw = self.loss_func(output, truth)
+        if Config().eval_separate:
+            loss = torch.mean(loss_raw)
+        else:
+            loss = loss_raw
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self.losses['loss'].append(loss.item())
-        self.evaluator.evaluate(output, truth)
+        self.losses['loss'].append(loss_raw.cpu().detach().numpy())
+        # self.evaluator.evaluate(output, truth)

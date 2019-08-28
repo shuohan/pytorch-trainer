@@ -3,6 +3,8 @@
 
 import os
 import torch
+import numpy as np
+import nibabel as nib
 from .observer import Observer
 from ..config import Config
 
@@ -20,6 +22,7 @@ class ModelSaver(Observer):
         """Initialize"""
         super().__init__()
         self.saving_period = saving_period
+        self.saving_path_prefix = saving_path_prefix
         self.saving_path_pattern = saving_path_prefix + 'checkpoint_{epoch}.pt'
         self.others = others
 
@@ -30,7 +33,7 @@ class ModelSaver(Observer):
 
     def _create_saving_directory(self):
         """Create saving directory"""
-        dirname = os.path.dirname(self.saving_path_pattern)
+        dirname = os.path.dirname(self.saving_path_prefix)
         if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)
 
@@ -55,3 +58,26 @@ class ModelSaver(Observer):
         contents['optimizer'] = self.observable.optimizer.state_dict()
         contents.update(self.others)
         return contents
+
+
+class PredictionSaver(ModelSaver):
+    def __init__(self, saving_period, saving_path_prefix, labels=None):
+        super().__init__(saving_period, saving_path_prefix)
+        self.labels = labels
+
+    def update_on_batch_end(self):
+        epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
+        subdir = self.saving_path_prefix + epoch
+        if not os.path.isdir(subdir):
+            os.makedirs(subdir)
+        segs = torch.argmax(self.observable.output, dim=1, keepdim=True).numpy()
+        for sample_id, seg in enumerate(segs):
+            batch = self.observable.batch
+            basename = ('%%0%dd' % len(str(self.observable.num_batches))) % batch
+            basename += '_' + ('%%0%dd' % len(str(len(segs)))) % sample_id + '.nii.gz'
+            filename = os.path.join(subdir, basename)
+            obj = nib.Nifti1Image(seg.astype(np.uint8), np.eye(4))
+            obj.to_filename(filename)
+
+    def update_on_epoch_end(self):
+        pass

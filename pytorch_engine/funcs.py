@@ -96,7 +96,7 @@ def calc_weighted_average(vals, weight):
     return result
 
 
-def calc_dice_loss(input, target, weight=None):
+def calc_dice_loss(input, target, weight=None, average=True):
     """Calculate the dice loss
 
     Args:
@@ -109,10 +109,13 @@ def calc_dice_loss(input, target, weight=None):
 
     """
     dices = _calc_dices(input, target, eps=Config().eps)
-    if weight is None:
-        dice = torch.mean(dices)
+    if average:
+        if weight is None:
+            dice = torch.mean(dices)
+        else:
+            dice = calc_weighted_average(dices, weight)
     else:
-        dice = calc_weighted_average(dices, weight)
+        dice = dices
     return 1 - dice
 
 
@@ -151,8 +154,12 @@ def calc_dice(input, target, channel_indices=None, eps=0):
 
     """
     input = prob_encode(input)
-    input_seg = one_hot(torch.argmax(input, dim=1, keepdim=True), input.shape)
-    target_onehot = one_hot(target, input.shape)
+    if input.shape[1] > 2:
+        input_seg = one_hot(torch.argmax(input, dim=1, keepdim=True), input.shape)
+        target_onehot = one_hot(target, input.shape)
+    else:
+        input_seg = (input >= 0.5).float()
+        target_onehot = target.float()
     if channel_indices is not None:
         input_seg = input_seg[:, channel_indices, ...]
         target_onehot = target_onehot[:, channel_indices, ...]
