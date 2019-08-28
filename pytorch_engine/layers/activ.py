@@ -1,10 +1,20 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Functions to create activation layers.
 
+"""
 from ..config import Config
 
 
 def create_activ():
+    """Creates an activation layer.
+
+    Note:
+        The parameters are configured in :attr:`pytorch_engine.Config.activ`.
+
+    Returns:
+        torch.nn.Module: The created activation layer.
+
+    """
     config = Config()
     paras = config.activ.copy()
     paras.pop('name')

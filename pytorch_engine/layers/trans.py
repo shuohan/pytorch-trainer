@@ -7,7 +7,7 @@ from ..config import Config
 
 
 class Interpolate(Module):
-    """Wrapper of torch.nn.functionals.interpolate
+    """Wrapper of :func:`torch.nn.functionals.interpolate`.
 
     """
     def __init__(self, size=None, scale_factor=None, mode='nearest',
@@ -35,6 +35,21 @@ class Interpolate(Module):
 
 
 def create_pool(kernel_size, **kwargs):
+    """Creates an pooling layer.
+
+    Note:
+        The parameters are configured in :attr:`pytorch_engine.Config.pool`.
+        Theres parameters should be mutually exclusive from ``kwargs``.
+
+    Args:
+        kernel_size (int or iterable[int]) : The size of the pooling window.
+        kwargs (dict): The addtional parameters of pooling. See pytorch MaxPool
+            and AvgPool for more details.
+
+    Returns:
+        torch.nn.Module: The created pooling layer.
+
+    """
     config = Config()
     paras = config.pool.copy()
     paras.pop('name')
@@ -55,10 +70,21 @@ def create_pool(kernel_size, **kwargs):
 
 
 def create_three_pool(**kwargs):
+    """Creates pooling with kernel size 3."""
     return create_pool(3, **kwargs)
 
 
 def create_global_pool(**kwargs):
+    """Creates global pooling with the kernel size equal to the image size.
+
+    Note:
+        The type of global pooling is configured in
+        :attr:`pytorch_engine.Config.global_pool`.
+
+    Returns:
+        torch.nn.Module: The created pooling layer.
+
+    """
     config = Config()
     if config.global_pool == 'max':
         if config.dim == 2:
@@ -77,6 +103,19 @@ def create_global_pool(**kwargs):
 
 
 def create_interpolate(size=None, scale_factor=None):
+    """Creates a interpolate layer.
+
+    See :func:`torch.nn.functionals.interpolate` for the inputs ``size`` and
+    ``scale_factor``.
+
+    Note:
+        The type and other parameters of interpolate are configured in
+        :attr:`pytorch_engine.Config.upsample`.
+
+    Returns:
+        torch.nn.Module: The created interpolate layer.
+
+    """
     config = Config()
     if config.upsample['name'] == 'linear':
         if config.dim == 2:
@@ -91,4 +130,5 @@ def create_interpolate(size=None, scale_factor=None):
 
 
 def create_two_upsample():
+    """Creates interpolate with scale factor 2."""
     return create_interpolate(scale_factor=2)

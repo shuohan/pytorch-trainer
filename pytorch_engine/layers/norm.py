@@ -1,9 +1,25 @@
 # -*- coding: utf-8 -*-
+"""Functions to create normalization layers.
 
+"""
 from ..config import Config
 
 
 def create_norm(num_features):
+    """Creates a normalization layer.
+
+    Note:
+        The normalization is configured via :attr:`pytorch_engine.Config.norm`,
+        and the saptial dimension is configured via
+        :attr:`pytorch_engine.Config.dim`.
+
+    Args:
+        num_features (int): The number of input channels.
+
+    Returns:
+        torch.nn.Module: The created normalization layer.
+
+    """
     config = Config()
     paras = config.norm.copy()
     paras.pop('name')
