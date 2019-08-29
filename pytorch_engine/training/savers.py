@@ -70,13 +70,16 @@ class PredictionSaver(ModelSaver):
         subdir = self.saving_path_prefix + epoch
         if not os.path.isdir(subdir):
             os.makedirs(subdir)
-        segs = torch.argmax(self.observable.output, dim=1, keepdim=True).numpy()
+        if self.observable.output.shape[1] > 1:
+            segs = torch.argmax(self.observable.output, dim=1, keepdim=True)
+        else:
+            segs = self.observable.output > 0.5
         for sample_id, seg in enumerate(segs):
             batch = self.observable.batch
             basename = ('%%0%dd' % len(str(self.observable.num_batches))) % batch
             basename += '_' + ('%%0%dd' % len(str(len(segs)))) % sample_id + '.nii.gz'
             filename = os.path.join(subdir, basename)
-            obj = nib.Nifti1Image(seg.astype(np.uint8), np.eye(4))
+            obj = nib.Nifti1Image(seg.numpy().astype(np.uint8), np.eye(4))
             obj.to_filename(filename)
 
     def update_on_epoch_end(self):
