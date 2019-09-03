@@ -33,7 +33,7 @@ def one_hot(input, shape):
 
     """
     result = torch.FloatTensor(shape).zero_()
-    if Config().use_gpu:
+    if Config.use_gpu:
         result = result.cuda()
     result.scatter_(1, input, 1)
     return result
@@ -108,7 +108,7 @@ def calc_dice_loss(input, target, weight=None, average=True):
         dice (torch.Tensor): The weighted dice
 
     """
-    dices = _calc_dices(input, target, eps=Config().eps)
+    dices = _calc_dices(input, target, eps=Config.eps)
     if average:
         if weight is None:
             dice = torch.mean(dices)
@@ -131,7 +131,7 @@ def calc_squared_dice_loss(input, target, weight=None):
         dice (torch.Tensor): The weighted dice
 
     """
-    dices = _calc_squared_dices(input, target, eps=Config().eps)
+    dices = _calc_squared_dices(input, target, eps=Config.eps)
     if weight is None:
         dice = torch.mean(dices)
     else:

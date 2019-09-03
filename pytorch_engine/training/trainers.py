@@ -74,7 +74,7 @@ class SimpleTrainer(Trainer):
         output = self.models['model'](input)
         self.output = output.cpu().detach()
         loss_raw = self.loss_func(output, truth)
-        if Config().eval_separate:
+        if Config.eval_separate:
             loss = torch.mean(loss_raw)
         else:
             loss = loss_raw

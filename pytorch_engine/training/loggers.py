@@ -46,7 +46,7 @@ class BasicLogger(Logger):
     def update_on_epoch_end(self):
         line_s = '%d' % (self.observable.epoch + 1)
         for value in self.losses.values():
-            if Config().eval_separate:
+            if Config.eval_separate:
                 current = value.all
                 for sample_id, sample in enumerate(current):
                     for channel_id, channel in enumerate(sample):
@@ -65,7 +65,7 @@ class BasicLogger(Logger):
         #     line = '%s,%g' % (line, value.mean)
 
     def _write_header(self):
-        if Config().eval_separate:
+        if Config.eval_separate:
             header = ['epoch', 'sample', 'channel'] + list(self.losses.keys())
         else:
             header = ['epoch'] + list(self.losses.keys())

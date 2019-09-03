@@ -15,12 +15,11 @@ def create_activ():
         torch.nn.Module: The created activation layer.
 
     """
-    config = Config()
-    paras = config.activ.copy()
+    paras = Config.activ.copy()
     paras.pop('name')
-    if config.activ['name'] == 'relu':
+    if Config.activ['name'] == 'relu':
         from torch.nn import ReLU
         return ReLU(**paras)
-    elif config.activ['name'] == 'leaky_relu':
+    elif Config.activ['name'] == 'leaky_relu':
         from torch.nn import LeakyReLU
         return LeakyReLU(**paras)

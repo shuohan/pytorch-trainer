@@ -62,7 +62,7 @@ class Observable:
         self.data_loader = data_loader
         self.num_epochs = num_epochs
         self.num_batches = len(self.data_loader)
-        self.use_gpu = Config().use_gpu
+        self.use_gpu = Config.use_gpu
 
         self.models = OrderedDict()
         self.losses = OrderedDict()

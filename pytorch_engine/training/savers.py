@@ -52,7 +52,7 @@ class ModelSaver(Observer):
     def _get_saving_contents(self):
         contents = {'epoch': self.observable.epoch,
                     'loss': self.observable.losses['loss'].mean,
-                    'engine_config': Config()}
+                    'engine_config': Config.save_dict()}
         for name, model in self.observable.models.items():
             contents[name] = model.state_dict()
         contents['optimizer'] = self.observable.optimizer.state_dict()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from config import Config_
+from config import Config as Config_
 
 
 class Config(Config_):
@@ -33,32 +33,19 @@ class Config(Config_):
         _attrs (list of str): A list of the configurations for printing
 
     """
-    def __init__(self, config_json=''):
-        """Initialize
-
-        Args:
-            config_json (str): The path to the json file storing configurations;
-                if the file does not exists, use the default settings
-                
-        """
-        super().__init__(config_json)
-
-        self._set_default('dim', 3)
-        self._set_default('kernel_init', 'kaiming_normal')
-        self._set_default('norm', {'name': 'instance', 'affine': True})
-        self._set_default('activ', {'name': 'relu'})
-        self._set_default('dropout_rate', 0.2)
-        self._set_default('max_channels', 512)
-        self._set_default('upsample', {'name': 'nearest',
-                                       'align_corners': False})
-        self._set_default('pool', {'name': 'max'})
-        self._set_default('global_pool', 'avg')
-        self._set_default('decimals', 4)
-        self._set_default('metrics', list())
-        self._set_default('loss', 'dice')
-        self._set_default('use_gpu', True)
-        self._set_default('encode_output', True)
-        self._set_default('eps', 1e-8)
-        self._set_default('eval_separate', False)
-        self._set_default('weight_init', {'name': 'kaiming_normal',
-                                          'mode': 'fan_in'})
+    dim = 3
+    norm = {'name': 'instance', 'affine': True}
+    activ = {'name': 'relu'}
+    dropout_rate = 0.2
+    max_channels = 512
+    upsample = {'name': 'nearest', 'align_corners': False}
+    pool = {'name': 'max'}
+    global_pool = 'avg'
+    decimals = 4
+    metrics = list()
+    loss = 'dice'
+    use_gpu = True
+    encode_output = True
+    eps = 1e-8
+    eval_separate = False
+    weight_init = {'name': 'kaiming_normal', 'mode': 'fan_in'}

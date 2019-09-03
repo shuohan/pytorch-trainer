@@ -26,11 +26,10 @@ def create_conv(in_channels, out_channels, kernel_size, **kwargs):
         torch.nn.Module: The created convolutional layer.
 
     """
-    config = Config()
-    if config.dim == 2:
+    if Config.dim == 2:
         from torch.nn import Conv2d
         return Conv2d(in_channels, out_channels, kernel_size, **kwargs)
-    elif config.dim == 3:
+    elif Config.dim == 3:
         from torch.nn import Conv3d
         return Conv3d(in_channels, out_channels, kernel_size, **kwargs)
 
@@ -41,11 +40,10 @@ def create_conv_trans(in_channels, out_channels, kernel_size, **kwargs):
     Check :func:`create_conv` for more details.
 
     """
-    config = Config()
-    if config.dim == 2:
+    if Config.dim == 2:
         from torch.nn import ConvTranspose2d
         return ConvTranspose2d(*args, **kwargs)
-    elif config.dim == 3:
+    elif Config.dim == 3:
         from torch.nn import ConvTranspose2d
         return ConvTranspose3d(*args, **kwargs)
 

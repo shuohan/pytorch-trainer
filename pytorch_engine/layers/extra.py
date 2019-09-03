@@ -17,10 +17,9 @@ def create_dropout():
         torch.nn.Module: The created dropout layer.
 
     """
-    config = Config()
-    if config.dim == 2:
+    if Config.dim == 2:
         from torch.nn import Dropout2d
-        return Dropout2d(config.dropout_rate)
-    elif config.dim == 3:
+        return Dropout2d(Config.dropout_rate)
+    elif Config.dim == 3:
         from torch.nn import Dropout3d
-        return Dropout3d(config.dropout_rate)
+        return Dropout3d(Config.dropout_rate)

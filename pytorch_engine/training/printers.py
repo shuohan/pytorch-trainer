@@ -40,7 +40,7 @@ class Printer(Observer):
         return pattern
 
     def _calc_value_pattern(self):
-        pattern = '%%s %%.%df' % Config().decimals
+        pattern = '%%s %%.%df' % Config.decimals
         return pattern
 
     def update_on_batch_end(self):
@@ -62,7 +62,7 @@ class Printer(Observer):
                             tmp = message.copy()
                             tmp.append(sp % (sample_id + 1))
                             tmp.append(cp % (channel_id + 1))
-                            tmp.append(('%%.%df' % Config().decimals) % channel)
+                            tmp.append(('%%.%df' % Config.decimals) % channel)
                             print(', '.join(tmp), flush=True)
                 # message.append(self._calc_value_pattern() % (key,value.current))
             # for key, value in self.observable.evaluator.results.items():

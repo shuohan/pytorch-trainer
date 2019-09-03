@@ -18,9 +18,8 @@ class MetricFuncs:
 
     """
     def __getitem__(self, key):
-        config = Config()
         if key == 'dice':
-            return partial(calc_dice, eps=config.eps)
+            return partial(calc_dice, eps=Config.eps)
         elif key.startswith('dice'):
             indices = list()
             for r in key.split('_')[1:]:
@@ -29,7 +28,7 @@ class MetricFuncs:
                     indices += range(ind[0], ind[1]+1)
                 else:
                     indices += ind
-            return partial(calc_dice, channel_indices=indices, eps=config.eps)
+            return partial(calc_dice, channel_indices=indices, eps=Config.eps)
 
 
 class Evaluator:
@@ -43,11 +42,10 @@ class Evaluator:
 
     """
     def __init__(self, buffer_length):
-        config = Config()
         self._funcs = OrderedDict()
         self.results = OrderedDict()
         metric_funcs = MetricFuncs()
-        for name in config.metrics:
+        for name in Config.metrics:
             self._funcs[name] = metric_funcs[name]
             self.results[name] = Buffer(buffer_length)
 

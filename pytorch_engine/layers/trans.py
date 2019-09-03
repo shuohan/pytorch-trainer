@@ -50,21 +50,20 @@ def create_pool(kernel_size, **kwargs):
         torch.nn.Module: The created pooling layer.
 
     """
-    config = Config()
-    paras = config.pool.copy()
+    paras = Config.pool.copy()
     paras.pop('name')
-    if config.pool['name'] == 'max':
-        if config.dim == 2:
+    if Config.pool['name'] == 'max':
+        if Config.dim == 2:
             from torch.nn import MaxPool2d
             return MaxPool2d(kernel_size, **paras, **kwargs)
-        elif config.dim == 3:
+        elif Config.dim == 3:
             from torch.nn import MaxPool3d
             return MaxPool3d(kernel_size, **paras, **kwargs)
-    elif config.pool['name'] == 'avg':
-        if config.dim == 2:
+    elif Config.pool['name'] == 'avg':
+        if Config.dim == 2:
             from torch.nn import AvgPool2d
             return AvgPool2d(kernel_size, **paras, **kwargs)
-        elif config.dim == 3:
+        elif Config.dim == 3:
             from torch.nn import AvgPool3d
             return AvgPool3d(kernel_size, **paras, **kwargs)
 
@@ -85,19 +84,18 @@ def create_global_pool(**kwargs):
         torch.nn.Module: The created pooling layer.
 
     """
-    config = Config()
-    if config.global_pool == 'max':
-        if config.dim == 2:
+    if Config.global_pool == 'max':
+        if Config.dim == 2:
             from torch.nn import AdaptiveMaxPool2d
             return AdaptiveMaxPool2d(1, **kwargs)
-        elif config.dim == 3:
+        elif Config.dim == 3:
             from torch.nn import AdaptiveMaxPool3d
             return AdaptiveMaxPool3d(1, **kwargs)
-    elif configs.global_pool == 'avg':
-        if config.dim == 2:
+    elif Config.global_pool == 'avg':
+        if Config.dim == 2:
             from torch.nn import AdaptiveAvgPool2d
             return AdaptiveAvgPool2d(1)
-        elif config.dim == 3:
+        elif Config.dim == 3:
             from torch.nn import AdaptiveAvgPool3d
             return AdaptiveAvgPool3d(1)
 
@@ -116,17 +114,16 @@ def create_interpolate(size=None, scale_factor=None):
         torch.nn.Module: The created interpolate layer.
 
     """
-    config = Config()
-    if config.upsample['name'] == 'linear':
-        if config.dim == 2:
+    if Config.upsample['name'] == 'linear':
+        if Config.dim == 2:
             mode = 'bilinear'
-        elif config.dim == 3:
+        elif Config.dim == 3:
             mode = 'trilinear'
-    elif config.upsample['name'] == 'nearest':
+    elif Config.upsample['name'] == 'nearest':
         mode = 'nearest'
-        config.upsample['align_corners'] = None
+        Config.upsample['align_corners'] = None
     return Interpolate(size=size, scale_factor=scale_factor, mode=mode,
-                       align_corners=config.upsample.get('align_corners'))
+                       align_corners=Config.upsample.get('align_corners'))
 
 
 def create_two_upsample():

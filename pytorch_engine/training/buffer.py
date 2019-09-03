@@ -19,7 +19,7 @@ class Buffer:
 
     """
     def __init__(self, max_length):
-        self.decimals = Config().decimals
+        self.decimals = Config.decimals
         self.max_length = max_length
         self._buffer = [None] * self.max_length
         self._ind = -1

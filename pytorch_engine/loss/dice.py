@@ -28,6 +28,6 @@ class DiceLoss(_WeightedLoss):
             target_onehot = one_hot(target, input.shape)
         else:
             target_onehot = target.float()
-        average = not Config().eval_separate
+        average = not Config.eval_separate
         return calc_dice_loss(input, target_onehot, weight=self.weight,
                               average=average)

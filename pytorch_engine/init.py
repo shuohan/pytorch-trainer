@@ -19,10 +19,9 @@ def _kaiming(func, module):
         module (torch.nn.modules._ConvNd): The module to initilize
 
     """
-    conf = Config()
-    nonlinearity = conf.activ['name']
-    mode = conf.weight_init['mode'] if 'mode' in conf.weight_init else 'fan_in'
-    a = conf.activ['negative_slope'] if 'negative_slope' in conf.activ else 0
+    nonlinearity = Config.activ['name']
+    mode = Config.weight_init['mode'] if 'mode' in Config.weight_init else 'fan_in'
+    a = Config.activ['negative_slope'] if 'negative_slope' in Config.activ else 0
     if isinstance(module, _ConvNd):
         func(module.weight, a=a, mode=mode, nonlinearity=nonlinearity)
 
@@ -36,7 +35,7 @@ def kaiming_uniform(module):
 
 
 def _xavier(func, module):
-    gain = conf.weight_init['gain'] if 'gain' in conf.weight_init else 1
+    gain = Config.weight_init['gain'] if 'gain' in Config.weight_init else 1
     if isinstance(module, _ConvNd):
         func(module.weight, gain=gain)
 
@@ -74,7 +73,7 @@ def init_paras(model):
             initialization
 
     """
-    weight_init = Config().weight_init['name']
+    weight_init = Config.weight_init['name']
     if weight_init == 'kaiming_normal':
         model.apply(kaiming_normal)
     elif weight_init == 'kaiming_uniform':
