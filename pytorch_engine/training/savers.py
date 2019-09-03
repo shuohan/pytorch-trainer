@@ -7,6 +7,7 @@ import numpy as np
 import nibabel as nib
 from .observer import Observer
 from ..config import Config
+from ..funcs import prob_encode
 
 
 class ModelSaver(Observer):
@@ -73,14 +74,25 @@ class PredictionSaver(ModelSaver):
         if self.observable.output.shape[1] > 1:
             segs = torch.argmax(self.observable.output, dim=1, keepdim=True)
         else:
-            segs = self.observable.output > 0.5
+            segs = prob_encode(self.observable.output)
+
+        inputs = self.observable.input[:, 0, ...]
         for sample_id, seg in enumerate(segs):
             batch = self.observable.batch
             basename = ('%%0%dd' % len(str(self.observable.num_batches))) % batch
-            basename += '_' + ('%%0%dd' % len(str(len(segs)))) % sample_id + '.nii.gz'
-            filename = os.path.join(subdir, basename)
-            obj = nib.Nifti1Image(seg.numpy().astype(np.uint8), np.eye(4))
-            obj.to_filename(filename)
+            basename += '_' + ('%%0%dd' % len(str(len(segs)))) % sample_id
+
+            input_filename = basename + '_input.nii.gz'
+            output_filename = basename + '_output.nii.gz'
+            input_filename = os.path.join(subdir, input_filename)
+            output_filename = os.path.join(subdir, output_filename)
+
+            input = inputs[sample_id, ...]
+            obj = nib.Nifti1Image(input.numpy().astype(float), np.eye(4))
+            obj.to_filename(input_filename)
+
+            obj = nib.Nifti1Image(seg.numpy().astype(float), np.eye(4))
+            obj.to_filename(output_filename)
 
     def update_on_epoch_end(self):
         pass

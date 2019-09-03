@@ -61,6 +61,7 @@ class SimpleTrainer(Trainer):
         self.losses['loss'] = Buffer(self.num_batches)
         self.loss_func = loss_func
         self.optimizer = optimizer
+        self.input = None
         self.output = None
 
     def _train_on_batch(self, input, truth):
@@ -72,6 +73,7 @@ class SimpleTrainer(Trainer):
 
         """
         output = self.models['model'](input)
+        self.input = input.cpu().detach()
         self.output = output.cpu().detach()
         loss_raw = self.loss_func(output, truth)
         if Config.eval_separate:
