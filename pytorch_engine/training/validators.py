@@ -22,6 +22,7 @@ class Validator(Observable, Observer):
         super().__init__(data_loader, None)
         self.saving_period = saving_period
         self.input = None
+        self.truth = None
         self.output = None
 
     def update_on_training_start(self):
@@ -67,6 +68,7 @@ class SimpleValidator(Validator):
     def _validate(self, input, truth):
         output = self.observable.models['model'](input)
         self.input = input.cpu().detach()
+        self.truth = truth.cpu().detach()
         self.output = output.cpu().detach()
         loss_raw = self.observable.loss_func(output, truth)
         self.losses['loss'].append(loss_raw.cpu().detach().numpy())

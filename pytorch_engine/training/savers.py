@@ -76,20 +76,27 @@ class PredictionSaver(ModelSaver):
         else:
             segs = prob_encode(self.observable.output)
 
-        inputs = self.observable.input[:, 0, ...]
+        inputs = self.observable.input
+        truths = self.observable.truth
         for sample_id, seg in enumerate(segs):
             batch = self.observable.batch
-            basename = ('%%0%dd' % len(str(self.observable.num_batches))) % batch
-            basename += '_' + ('%%0%dd' % len(str(len(segs)))) % sample_id
+            basename = ('%%0%dd' % len(str(self.observable.num_batches))) % (batch+1)
+            basename += '_' + ('%%0%dd' % len(str(len(segs)))) % (sample_id+1)
 
             input_filename = basename + '_input.nii.gz'
+            truth_filename = basename + '_truth.nii.gz'
             output_filename = basename + '_output.nii.gz'
             input_filename = os.path.join(subdir, input_filename)
+            truth_filename = os.path.join(subdir, truth_filename)
             output_filename = os.path.join(subdir, output_filename)
 
             input = inputs[sample_id, ...]
             obj = nib.Nifti1Image(input.numpy().astype(float), np.eye(4))
             obj.to_filename(input_filename)
+
+            truth = truths[sample_id, ...]
+            obj = nib.Nifti1Image(truth.numpy().astype(float), np.eye(4))
+            obj.to_filename(truth_filename)
 
             obj = nib.Nifti1Image(seg.numpy().astype(float), np.eye(4))
             obj.to_filename(output_filename)
