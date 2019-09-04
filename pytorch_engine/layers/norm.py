@@ -29,6 +29,10 @@ def create_norm(num_features):
         elif Config.norm['name'] == 'batch':
             from torch.nn import BatchNorm2d
             return BatchNorm2d(num_features, **paras)
+        elif Config.norm['name'] == 'group':
+            from torch.nn import GroupNorm
+            num_groups = paras.pop('num_groups')
+            return GroupNorm(num_groups, num_features, **paras)
     elif Config.dim == 3:
         if Config.norm['name'] == 'instance':
             from torch.nn import InstanceNorm3d
@@ -36,3 +40,7 @@ def create_norm(num_features):
         elif Config.norm['name'] == 'batch':
             from torch.nn import BatchNorm3d
             return BatchNorm3d(num_features, **paras)
+        elif Config.norm['name'] == 'group':
+            from torch.nn import GroupNorm
+            num_groups = paras.pop('num_groups')
+            return GroupNorm(num_groups, num_features, **paras)
