@@ -53,7 +53,7 @@ class Printer(Observer):
             message.append(bp % (self.observable.batch + 1))
             for key, value in self.observable.losses.items():
                 current = value.current
-                if current.size > 1:
+                if current.size >= 1:
                     space = ' ' * (len(', '.join(message)) + 2)
                     sp = self._calc_pattern('sample', current.shape[0])
                     cp = self._calc_pattern('channel', current.shape[1])
