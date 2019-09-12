@@ -67,6 +67,9 @@ class PredictionSaver(ModelSaver):
         self.labels = labels
 
     def update_on_batch_end(self):
+        if (self.observable.epoch + 1) % self.saving_period != 0:
+            return
+
         epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
         subdir = self.saving_path_prefix + epoch
         if not os.path.isdir(subdir):
