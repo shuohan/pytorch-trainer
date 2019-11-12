@@ -67,9 +67,12 @@ class SimpleValidator(Validator):
     """Simple validator with only one model"""
     def _validate(self, input, truth):
         output = self.observable.models['model'](input)
-        self.input = input.cpu().detach()
-        self.truth = truth.cpu().detach()
-        self.output = output.cpu().detach()
+        self._cpu(input, truth, output)
         loss_raw = self.observable.loss_func(output, truth)
         self.losses['loss'].append(loss_raw.cpu().detach().numpy())
         # self.evaluator.evaluate(output, truth)
+
+    def _cpu(self, input, truth, output):
+        self.input = input.cpu().detach()
+        self.truth = truth.cpu().detach()
+        self.output = output.cpu().detach()

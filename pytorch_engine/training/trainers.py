@@ -74,9 +74,7 @@ class SimpleTrainer(Trainer):
 
         """
         output = self.models['model'](input)
-        self.input = input.cpu().detach()
-        self.truth = truth.cpu().detach()
-        self.output = output.cpu().detach()
+        self._cpu(input, truth, output)
         loss_raw = self.loss_func(output, truth)
         if Config.eval_separate:
             loss = torch.mean(loss_raw)
@@ -87,3 +85,8 @@ class SimpleTrainer(Trainer):
         self.optimizer.step()
         self.losses['loss'].append(loss_raw.cpu().detach().numpy())
         # self.evaluator.evaluate(output, truth)
+
+    def _cpu(self, input, truth, output):
+        self.input = input.cpu().detach()
+        self.truth = truth.cpu().detach()
+        self.output = output.cpu().detach()
