@@ -31,6 +31,11 @@ class ModelSaver(Observer):
         """Calculate the number of the digits of the total number of epochs"""
         self._num_digits = len(str(self.observable.num_epochs))
         self._create_saving_directory()
+        if Config.save_epoch_0:
+            epoch = ('%%0%dd' % self._num_digits) % 0
+            filepath = self.saving_path_pattern.format(epoch=epoch)
+            contents = self._get_saving_contents()
+            torch.save(contents, filepath)
 
     def _create_saving_directory(self):
         """Create saving directory"""

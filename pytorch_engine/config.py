@@ -49,3 +49,4 @@ class Config(Config_):
     eps = 1e-8
     eval_separate = False
     weight_init = {'name': 'kaiming_normal', 'mode': 'fan_in'}
+    save_epoch_0 = False
