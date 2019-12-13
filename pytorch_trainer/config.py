@@ -33,14 +33,6 @@ class Config(Config_):
         _attrs (list of str): A list of the configurations for printing
 
     """
-    dim = 3
-    norm = {'name': 'instance', 'affine': True}
-    activ = {'name': 'relu'}
-    dropout_rate = 0.2
-    max_channels = 512
-    upsample = {'name': 'nearest', 'align_corners': False}
-    pool = {'name': 'max'}
-    global_pool = 'avg'
     decimals = 4
     metrics = list()
     loss = 'dice'
