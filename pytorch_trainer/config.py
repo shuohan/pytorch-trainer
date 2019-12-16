@@ -35,9 +35,7 @@ class Config(Config_):
     """
     decimals = 4
     metrics = list()
-    loss = 'dice'
     use_gpu = True
-    encode_output = True
     eps = 1e-8
     eval_separate = False
     weight_init = {'name': 'kaiming_normal', 'mode': 'fan_in'}
