@@ -11,6 +11,11 @@ class Config(Config_):
 
     to update the configurations.
 
+    Note:
+        Avoid copying the value of a :class:`Config` attribute to another
+        variable, since this variable would not be updated automatically when
+        :class:`Config` changes.
+
     """
     decimals = 4
     """int: The number of decimals to print and log."""
