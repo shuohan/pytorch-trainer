@@ -1,25 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from collections import OrderedDict
-
-from ..config import Config
+import warnings
 
 
 class Buffer:
-    """Array with fixed length
+    """This class implements a list with a fixed length.
 
-    Call `append` to append a number; if full, it will overwrite from the start.
+    :class:`Buffer` empties the list if the fixed length is reached, i.e., it
+    only keeps track of the values from index 0 to the current index within this
+    list. Users can only append the list by calling :meth:`append`; if full, it
+    will overwrite from the start.
+
+    This class also supports appending arrays as the element.
 
     Attributes:
-        decimals (int): The precision of returned float number
-        max_length (int): The maximum length of the buffer
-        _buffer (np.array): The internal buffer holding the numbers
-        _ind (int): The position index of self._buffer
+        max_length (int): The maximum length of the buffer.
 
     """
     def __init__(self, max_length):
-        self.decimals = Config.decimals
         self.max_length = max_length
         self._buffer = [None] * self.max_length
         self._ind = -1
@@ -29,31 +28,68 @@ class Buffer:
 
     @property
     def current(self):
-        """Return the currect value"""
+        """Returns current value.
+
+        Returns:
+            numpy.ndarray: The value at current location.
+
+        """
         if self._ind == -1:
-            print(self.__class__, "is empty")
-            return float('nan')
+            message = 'Buffer is empty. Return "nan" as the current value.'
+            warnings.warn(message, RuntimeWarning)
+            return np.nan
         else:
-            return np.round(self._buffer[self._ind], self.decimals)
+            return np.array(self._buffer[self._ind])
 
     @property
     def mean(self):
-        """Return the average accumulated value"""
+        """Returns the average aross the accumulated values.
+
+        Returns:
+            numpy.ndarray: The mean across the accumulated values.
+
+        """
         if self._ind == -1:
-            print(self.__class__, "is empty")
-            return float('nan')
+            message = 'Buffer is empty. Return numpy.array([]) as the mean.'
+            warnings.warn(message, RuntimeWarning)
+            return np.array(list())
         else:
-            return np.round(np.mean(np.vstack(self._buffer[:self._ind+1])), self.decimals)
+            return np.mean(self._buffer[:self._ind+1], axis=0)
 
     @property
     def all(self):
-        all = np.round(np.vstack(self._buffer[:self._ind+1]), self.decimals)
-        return all
+        """Returns all values.
 
-    def append(self, current):
-        """Add the current value"""
+        Returns:
+            list[numpy.ndarray]: All tracked values.
+
+        """
+        if self._ind == -1:
+            message = 'Buffer is empty. Return numpy.array([]) for all values.'
+            warnings.warn(message, RuntimeWarning)
+            return np.array(list())
+        else:
+            return self._buffer[:self._ind+1]
+
+    def append(self, value):
+        """Appends a new element. Overwrites from the start if full.
+
+        Args:
+            value (numpy.ndarray or number): The value to append.
+
+        Raises:
+            ValueError: The value to append has different shape from previously
+                added values.
+
+        """
         if self._ind == self.max_length - 1:
             self._ind = 0
         else:
             self._ind += 1
-        self._buffer[self._ind] = current
+        value = np.array(value).squeeze()
+        if self._ind > 0:
+            if value.shape != self._buffer[self._ind - 1].shape:
+                m = ('The value to append has different shape from the '
+                     'previously added values.')
+                raise ValueError(m)
+        self._buffer[self._ind] = value
