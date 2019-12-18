@@ -7,6 +7,19 @@ from .observer import Observable, Observer
 from .config import Config
 
 
+def convert_th_to_np(data):
+    """Converts :class:`torch.Tensor` to :class:`numpy.ndarray'.
+
+    Args:
+        data (torch.Tensor): The tensor to convert.
+
+    Returns:
+        numpy.ndarray: The converted.
+
+    """
+    return data.detach().cpu().numpy()
+
+
 class _TraVal(Observable):
     """Observable for :class:`Trainer` and :class:`Validator`.
 
@@ -87,27 +100,6 @@ class _TraVal(Observable):
         elif isinstance(data, torch.Tensor):
             return data.cpu()
 
-    def _numpy(self, data):
-        """Converts :class:`torch.Tensor` to :class:`numpy.ndarray'.
-
-        Args:
-            data (torch.Tensor): The tensor to convert.
-
-        Returns:
-            numpy.ndarray: The converted.
-
-        """
-        return data.detach().cpu().numpy()
-
-    def _dump(self, name, data):
-        """Dumps data into :attr:`dumps` in CPU as :class:`numpy.ndarray`.
-
-        Args:
-            name (str): The name of the data, used as key in :attr:`dumps`.
-            data (torch.Tensor): The intermediate data to dump.
-        """
-        self.dumps[name] = self._numpy(data)
-
 
 class Trainer(_TraVal):
     """Abstract class for model training.
@@ -187,21 +179,20 @@ class Validator(_TraVal, Observer):
         raise NotImplementedError
 
 
-class _BasicInterface:
-    """An interface class.
-
-    This class is for :class:`BasicTrainer` and :class:`BasicValidator`.
+class _Basic:
+    """Common functions for :class:`BasicTrainer` and :class:`BasicValidator`.
 
     """
-    def _dump_results(self, input, output, truth):
+    def _dump(self, dumps, input, truth, output):
         """Dumps intermediate results at mini-batch."""
         if Config.dump:
-            self._dump('input', input)
-            self._dump('output', output)
-            self._dump('truth', truth)
+            for key, value in kwargs.items():
+                dumps['input'] = input
+                dumps['output'] = output
+                dumps['truth'] = truth
 
 
-class BasicTrainer(Trainer, _BasicInterface):
+class BasicTrainer(Trainer, _Basic):
     """A basic trainer.
 
     This trainer has only one model to train. Correspondingly, it also only
@@ -237,11 +228,11 @@ class BasicTrainer(Trainer, _BasicInterface):
         self.optim.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self.losses['model'].append(self._numpy(loss))
-        self._dump_results(input, output, truth)
+        self.losses['model'].append(convert_th_to_np(loss))
+        self._dump(self.dumps, input, output, truth)
 
 
-class BasicValidator(Validator, _BasicInterface):
+class BasicValidator(Validator, _Basic):
     """A basic validator.
 
     This validator has only one model to validate with an input and a truth.
@@ -259,5 +250,5 @@ class BasicValidator(Validator, _BasicInterface):
         input, truth = data[0], data[1]
         output = self.observable.models['model'](input)
         loss = self.observable.loss_func(output, truth)
-        self.losses['model'].append(self._numpy(loss))
-        self._dump_results(input, output, truth)
+        self.losses['model'].append(convert_th_to_np(loss))
+        self._dump(self.dumps, input, output, truth)
