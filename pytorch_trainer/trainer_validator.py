@@ -2,8 +2,47 @@
 
 import torch
 
-from .observer import Observer, Observable
 from .buffer import Buffer
+from .observer import Observable, Observer
+from .config import Config
+
+
+class Trainer(Observable):
+    """Abstract class for model training.
+
+    """
+    def train(self):
+        """Trains the models."""
+        self._notify_observers_on_training_start()
+        self._move_models_to_cuda()
+        for self.epoch in range(self.num_epochs):
+            self._notify_observers_on_epoch_start()
+            self._set_models_to_train()
+            self._train_on_epoch()
+            self._notify_observers_on_epoch_end()
+        self._notify_observers_on_training_end()
+
+    def _set_models_to_train(self):
+        """Sets all modelds to train."""
+        for model in self.models.values():
+            model.train()
+
+    def _train_on_epoch(self):
+        """Trains the models for each epoch."""
+        for self.batch, data in enumerate(self.data_loader):
+            data = self._transfer(data)
+            self._notify_observers_on_batch_start()
+            self._train_on_batch(data)
+            self._notify_observers_on_batch_end()
+
+    def _train_on_batch(self, data):
+        """Trains the models for each batch.
+
+        Args:
+            data (tuple or torch.Tensor): The data used to train the models.
+
+        """
+        raise NotImplementedError
 
 
 class Validator(Observable, Observer):
@@ -45,29 +84,3 @@ class Validator(Observable, Observer):
 
         """
         raise NotImplementedError
-
-
-class BasicValidator(Validator):
-    """A basic validator.
-
-    This validator has only one model to validate. This class is used with
-    :class:`pytorch_trainer.BasicTrainer`.
-
-    """
-    def _validate(self, data):
-        """Validates the models.
-
-        Args:
-            data (tuple[torch.Tensor]): The first element is the input tensor to
-                the model. The second element is the truth output of the model.
-
-        """
-        input, truth = data[0], data[1]
-        output = self.observable.models['model'](input)
-        loss = self.observable.loss_func(output, truth)
-        self.losses['model'].append(self._numpy(loss))
-
-        if Config.dump:
-            self._dump('input', input)
-            self._dump('output', output)
-            self._dump('truth', truth)
