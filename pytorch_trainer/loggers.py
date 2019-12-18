@@ -3,7 +3,7 @@
 import os
 
 from .observer import Observer
-from ..config import Config
+from .config import Config
 
 
 class Logger(Observer):

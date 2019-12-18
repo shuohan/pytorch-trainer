@@ -7,72 +7,67 @@ from .buffer import Buffer
 
 
 class Validator(Observable, Observer):
-    """Validate model
-
-    Attributes:
-        data_loader (torch.utils.data.DataLoader): Data loader
-        num_epochs (int): The number of epochs
-        num_batches (int): The number of batches
-        loses (collections.OrderedDict): The losses
-        evaluator (.evaluator.Evaluator): Evaluate the model
+    """Abstract class for model validation.
 
     """
-    def __init__(self, data_loader, saving_period=1):
-        """Initialize"""
-        super().__init__(data_loader, None)
-        self.saving_period = saving_period
-        self.input = None
-        self.truth = None
-        self.output = None
-
     def update_on_training_start(self):
-        """Initialize the losses and evaluator"""
+        """Initializes loss buffers."""
         self.num_epochs = self.observable.num_epochs
         for name in self.observable.losses.keys():
             self.losses[name] = Buffer(self.num_batches)
         self._notify_observers_on_training_start()
 
     def update_on_epoch_end(self):
-        """Validate the model using the models"""
-        self.epoch = self.observable.epoch # self.epoch is zero based index
-        if ((self.epoch + 1) % self.saving_period) == 0:
+        """Validates the models after each training epoch."""
+        self.epoch = self.observable.epoch
+        if ((self.epoch + 1) % Config.validation_period) == 0:
             with torch.no_grad():
-                for model in self.observable.models.values():
-                    model.eval()
-                for self.batch, (input, truth) in enumerate(self.data_loader):
-                    if self.observable.use_gpu:
-                        input, truth = self._cuda(input, truth)
-                    self._validate(input, truth)
+                self._set_models_to_eval()
+                for self.batch, data in enumerate(self.data_loader):
+                    data = self._transfer(data)
+                    self._validate(data)
                     self._notify_observers_on_batch_end()
             self._notify_observers_on_epoch_end()
-
-    def _cuda(self, input, truth):
-        return input.cuda(), truth.cuda()
 
     def update_on_training_end(self):
         self._notify_observers_on_training_end()
 
-    def _validate(self, input, truth):
-        """Validate on input and the truth
+    def _set_models_to_eval(self):
+        """Sets all modelds to eval."""
+        for model in self.observable.models.values():
+            model.eval()
+
+    def _validate(self, data):
+        """Validates the models.
 
         Args:
-            input (torch.Tensor): The input tensor to the models
-            truth (torch.Tensor): The target output
+            data (tuple or torch.Tensor): The data used to validate the models.
 
         """
         raise NotImplementedError
 
 
-class SimpleValidator(Validator):
-    """Simple validator with only one model"""
-    def _validate(self, input, truth):
-        output = self.observable.models['model'](input)
-        self._cpu(input, truth, output)
-        loss_raw = self.observable.loss_func(output, truth)
-        self.losses['loss'].append(loss_raw.cpu().detach().numpy())
-        # self.evaluator.evaluate(output, truth)
+class BasicValidator(Validator):
+    """A basic validator.
 
-    def _cpu(self, input, truth, output):
-        self.input = input.cpu().detach()
-        self.truth = truth.cpu().detach()
-        self.output = output.cpu().detach()
+    This validator has only one model to validate. This class is used with
+    :class:`pytorch_trainer.BasicTrainer`.
+
+    """
+    def _validate(self, data):
+        """Validates the models.
+
+        Args:
+            data (tuple[torch.Tensor]): The first element is the input tensor to
+                the model. The second element is the truth output of the model.
+
+        """
+        input, truth = data[0], data[1]
+        output = self.observable.models['model'](input)
+        loss = self.observable.loss_func(output, truth)
+        self.losses['model'].append(self._numpy(loss))
+
+        if Config.dump:
+            self._dump('input', input)
+            self._dump('output', output)
+            self._dump('truth', truth)
