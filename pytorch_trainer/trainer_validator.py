@@ -13,7 +13,6 @@ class _TraVal(Observable):
     Attributes:
         data_loader (torch.utils.data.DataLoader): The data loader.
         num_batches (int): The number of mini-batches.
-        num_epochs (int): The number of epochs.
         models (dict[torch.nn.Module): The models to train or validate.
         losses (dict[Buffer]): The calculated losses.
         epoch (int): The current epoch.
@@ -29,8 +28,6 @@ class _TraVal(Observable):
     def __init__(self, data_loader, *args, num_epochs=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.data_loader = data_loader
-        self.num_epochs = num_epochs
-
         self.num_batches = len(self.data_loader)
         self.models = dict()
         self.losses = dict()
@@ -120,7 +117,7 @@ class Trainer(_TraVal):
         """Trains the models."""
         self._notify_observers_on_training_start()
         self._move_models_to_cuda()
-        for self.epoch in range(self.num_epochs):
+        for self.epoch in range(Config.num_epochs):
             self._notify_observers_on_epoch_start()
             self._set_models_to_train()
             self._train_on_epoch()
@@ -156,9 +153,8 @@ class Validator(_TraVal, Observer):
     """
     def update_on_training_start(self):
         """Initializes loss buffers."""
-        self.num_epochs = self.observable.num_epochs
         for name in self.observable.losses.keys():
-            self.losses[name] = Buffer(self.num_batches)
+            self.losses[name] = Buffer(Config.num_epochs)
         self._notify_observers_on_training_start()
 
     def update_on_epoch_end(self):

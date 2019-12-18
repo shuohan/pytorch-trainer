@@ -23,3 +23,5 @@ class Config(Config_):
     """bool: Use GPU to train and validate."""
     save_epoch_0 = False
     """bool: Save before updating any weights."""
+    num_epochs = 100
+    """int: The number of epochs to train the networks."""
