@@ -41,8 +41,18 @@ class Observer:
 class Observable:
     """Notifies registered :class:`Observer` for updates.
 
+    Notes:
+        This a minxin class. If a class inherts from multiple parent classes,
+        :class:`Observable` should be put in front.
+
+        Any class inheriting from this class should also be a mixin in order to
+        use multiple inheritance, i.e., it should implement
+
+        >>> super().__init__(*args, **kwargs)
+
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._observers = list()
 
     def register_observer(self, observer):

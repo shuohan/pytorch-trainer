@@ -20,9 +20,14 @@ class _TraVal(Observable):
         batch (int): The current mini-batch.
         dumps (dict[numpy.ndarray]): The intermediate results to dump into cpu.
             It should store ``None`` if not :attr:`pytorch_trainer.Config.dump`.
+
+    Notes:
+        This class is a mixin. See :class:`pytorch_trainer.observer.Observable`
+        for details.
     
     """
-    def __init__(self, data_loader, num_epochs=None):
+    def __init__(self, data_loader, *args, num_epochs=None, **kwargs):
+        super().__init__(*args, **kwargs)
         self.data_loader = data_loader
         self.num_epochs = num_epochs
 
@@ -32,8 +37,6 @@ class _TraVal(Observable):
         self.epoch = 0
         self.batch = 0
         self.dumps = dict()
-
-        super().__init__()
 
     def _move_models_to_cuda(self):
         """Moves all models into cuda."""
@@ -151,10 +154,6 @@ class Validator(_TraVal, Observer):
     """Abstract class for model validation.
 
     """
-    def __init__(self, data_loader, num_epochs=None):
-        super().__init__(data_loader, num_epochs)
-        self.observable = None
-
     def update_on_training_start(self):
         """Initializes loss buffers."""
         self.num_epochs = self.observable.num_epochs
