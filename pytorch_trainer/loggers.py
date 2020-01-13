@@ -17,6 +17,11 @@ class Writer:
     def __init__(self, logger):
         self.logger = logger
 
+    @property
+    def _epoch(self):
+        """Returns the current epoch id."""
+        return self.logger.observable.epoch + 1
+
     def write(self, prefix, values):
         """Writes contents to the file.
 
@@ -33,7 +38,7 @@ class Writer:
 
 
 class WideWriter(Writer):
-    """Writes the contents in the wide format.
+    """Writes the mean across a mini-batch in the wide format.
 
     Example output:
 
@@ -42,11 +47,11 @@ class WideWriter(Writer):
 
     """
     def write_line(self):
-        line_s = '%d' % (self.logger.observable.epoch + 1)
+        line = '%d' % self._epoch
         for value in self.logger.observable.metrics.values():
             mean = ('%%.%df' % Config.decimals) % value.mean
-            line = line_s + ',%s' % mean
-            self.logger.file.write(line + '\n')
+            line = ','.join([line, mean]) + '\n'
+            self.logger.file.write(line )
             self.logger.file.flush()
 
     def write_header(self):
@@ -57,17 +62,33 @@ class WideWriter(Writer):
 
 
 class LongWriter(Writer):
-    """Writes the contents in the long format.
+    """Writes each channel of each sample in a mini-batch in the long format.
 
     Example output:
 
-    epoch,batch,name,value
-    1,1,value0,0.1
-    1,1,value1,0.2
-    1,1,value2,0.3
+    epoch,batch,sample,channel,name,value0,value1
+    1,1,1,1,value0,0.2
+    1,1,1,1,value1,0.1
 
     """
-    pass
+    def write_line(self):
+        for key, value in self.logger.observable.metrics.items():
+            all_values = value.all
+            for batch_id, batch in enumerate(all_values):
+                for sample_id, sample in enumerate(batch):
+                    for channel_id, channel in enumerate(sample):
+                        line = '%d,%d' % (self._epoch, batch_id+1)
+                        line = line + ',%d,%d' % (sample_id+1, channel_id+1)
+                        val = ('%%.%df' % Config.decimals) % channel
+                        line = ','.join([line, key, val]) + '\n'
+                        self.logger.file.write(line)
+                        self.logger.file.flush()
+
+    def write_header(self):
+        header = ['epoch', 'batch', 'sample', 'channel', 'name', 'value']
+        header = ','.join(header) + '\n'
+        self.logger.file.write(header)
+        self.logger.file.flush()
 
 
 class Logger(Observer):
@@ -75,6 +96,9 @@ class Logger(Observer):
     
     Attributes:
         filename (str): The path to the file to write to.
+
+    Raises:
+        RuntimeError: :attr:`Config.logger_fmt` is not in :class:`LoggerFormat`.
 
     """
     def __init__(self, filename):
@@ -90,6 +114,8 @@ class Logger(Observer):
             self._writer = WideWriter(self)
         elif Config.logger_fmt is LoggerFormat.LONG:
             self._writer = LongWriter(self)
+        else:
+            raise RuntimeError(Config.logger_fmt, 'is not supported.')
 
     def update_on_training_start(self):
         """Writes the header."""
@@ -103,43 +129,3 @@ class Logger(Observer):
         """Outputs rest of the information and closes the file."""
         self.file.flush() 
         self.file.close()
-
-
-class SplitLogger(Logger):
-    """A logger writes the losses for each sample in a mini-batch.
-
-    """
-    def update_on_epoch_end(self):
-        line_s = '%d' % (self.observable.epoch + 1)
-        for value in self.observable.losses.values():
-            batch_losses = value.all
-            for sample_id, sample in enumerate(batch_losses):
-                for channel_id, channel in enumerate(sample):
-                        line = line_s
-                        line += ',%d' % (sample_id + 1)
-                        line += ',%d' % (channel_id + 1)
-                        line += ',%g' % channel
-                        line += '\n'
-                        self.file.write(line)
-                        self.file.flush()
-            else:
-                line = line_s + ',%g' % value.mean
-                self.file.write(line)
-                self.file.flush()
-        # for value in self.evaluator.results.values():
-        #     line = '%s,%g' % (line, value.mean)
-
-
-        # if Config.eval_separate:
-        #     header = ['epoch', 'sample', 'channel'] + list(self.losses.keys())
-        # else:
-
-    def _write_header(self):
-        if Config.eval_separate:
-            header = ['epoch', 'sample', 'channel'] + list(self.losses.keys())
-        else:
-            header = ['epoch'] + list(self.losses.keys())
-        # header += self.evaluator.results.keys()
-        header = ','.join(header) + '\n'
-        self.file.write(header)
-        self.file.flush()

@@ -4,6 +4,8 @@
 
 import torch
 
+from ..config import Config, Reduction
+
 
 def convert_th_to_np(data):
     """Converts :class:`torch.Tensor` to :class:`numpy.ndarray'.
@@ -118,3 +120,30 @@ def set_models_to_eval(models, *args, **kwargs):
     
     """
     return _eval(models, 'eval', torch.nn.Module, *args, **kwargs)
+
+
+def reduce(value, dims=tuple()):
+    """Reduces value if it is not a scaler.
+
+    Args:
+        value (torch.Tensor): The tensor to reduce.
+        dims (int or tuple[int]): The reduction axes.
+   
+    Raises:
+        RuntimeError: :attr:`Config.reduction` is not in :class:`Recuction`.
+    
+    """
+    if len(value.shape) > 0:
+        if Config.reduction is Reduction.MEAN:
+            if len(dims) > 0:
+                value = torch.mean(value, dims)
+            else:
+                value = torch.mean(value)
+        elif Config.reduction is Reduction.SUM:
+            if len(dims) > 0:
+                value = torch.sum(value, dims)
+            else:
+                value = torch.sum(value)
+        else:
+            raise RuntimeError(Config.reduction, 'is not supported.')
+    return value

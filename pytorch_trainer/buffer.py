@@ -61,7 +61,7 @@ class Buffer:
         """Returns all values.
 
         Returns:
-            list[numpy.ndarray]: All tracked values.
+            numpy.ndarray: All tracked values.
 
         """
         if self._ind == -1:
@@ -69,7 +69,7 @@ class Buffer:
             warnings.warn(message, RuntimeWarning)
             return np.array(list())
         else:
-            return self._buffer[:self._ind+1]
+            return np.stack(self._buffer[:self._ind+1], axis=0)
 
     def append(self, value):
         """Appends a new element. Overwrites from the start if full.

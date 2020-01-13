@@ -5,7 +5,6 @@ import torch
 from ..buffer import Buffer
 from ..observer import Observable, Observer
 from ..config import Config
-from ..funcs import convert_th_to_np
 from ..funcs import transfer_data_to_cuda, transfer_data_to_cpu
 from ..funcs import transfer_models_to_cuda, transfer_models_to_cpu
 from ..funcs import set_models_to_train, set_models_to_eval
@@ -56,14 +55,7 @@ class _TraVal(Observable):
 class Trainer(_TraVal):
     """Abstract class for model training.
 
-    Attributes:
-        num_epochs (int): The number of epochs.
-
     """
-    def __init__(self, data_loader, *args, num_epochs=500, **kwargs):
-        super().__init__(data_loader, *args, **kwargs)
-        self.num_epochs = num_epochs
-
     def train(self):
         """Trains the models."""
         self._notify_observers_on_training_start()

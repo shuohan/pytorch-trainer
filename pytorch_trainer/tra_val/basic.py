@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from ..config import Config
 from ..buffer import Buffer
-from ..funcs import convert_th_to_np
+from ..config import Config, Reduction
+from ..funcs import convert_th_to_np, reduce
 from .tra_val import Trainer, Validator
 
 
@@ -18,6 +18,12 @@ class _Basic:
             self.dumps['input'] = input
             self.dumps['output'] = output
             self.dumps['truth'] = truth
+
+    def _record_loss(self, loss):
+        """Records loss."""
+        dims = tuple(range(2, len(loss.shape)))
+        loss = reduce(loss, dims=dims)
+        self.losses['model'].append(convert_th_to_np(loss))
 
 
 class BasicTrainer(Trainer, _Basic):
@@ -35,8 +41,8 @@ class BasicTrainer(Trainer, _Basic):
         optim (torch.optim.Optimizer): The optimizer.
 
     """
-    def __init__(self, model, loss_func, optim, data_loader, num_epochs=500):
-        super().__init__(data_loader, num_epochs=num_epochs)
+    def __init__(self, model, loss_func, optim, data_loader):
+        super().__init__(data_loader)
         self.models['model'] = model
         self.losses['model'] = Buffer(self.num_batches)
         self.loss_func = loss_func
@@ -53,10 +59,11 @@ class BasicTrainer(Trainer, _Basic):
         input, truth = data[0], data[1]
         output = self.models['model'](input)
         loss = self.loss_func(output, truth)
+        loss_reduce = reduce(loss)
         self.optim.zero_grad()
-        loss.backward()
+        loss_reduce.backward()
         self.optim.step()
-        self.losses['model'].append(convert_th_to_np(loss))
+        self._record_loss(loss)
         self._dump(input, output, truth)
 
 
@@ -78,5 +85,5 @@ class BasicValidator(Validator, _Basic):
         input, truth = data[0], data[1]
         output = self.observable.models['model'](input)
         loss = self.observable.loss_func(output, truth)
-        self.losses['model'].append(convert_th_to_np(loss))
+        self._record_loss(loss)
         self._dump(input, output, truth)
