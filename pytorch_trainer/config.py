@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from enum import Enum
 from config import Config as Config_
+
+
+class LoggerFormat(Enum):
+    LONG = 'long'
+    WIDE = 'wide'
 
 
 class Config(Config_):
@@ -25,3 +31,9 @@ class Config(Config_):
     """bool: Save before updating any weights."""
     num_epochs = 100
     """int: The number of epochs to train the networks."""
+    dump = True
+    """bool: Dump the intermediate results into cpu."""
+    logger_fmt = LoggerFormat.WIDE
+    """enum LoggerFormat: The format of logger contents."""
+    val_period = 10
+    """int: The validation periord in number of epochs."""

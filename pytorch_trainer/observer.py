@@ -39,7 +39,7 @@ class Observer:
 
 
 class Observable:
-    """Notifies registered :class:`Observer` for updates.
+    """An abstract class to notify registered :class:`Observer` for updates.
 
     Notes:
         This a minxin class. If a class inherts from multiple parent classes,
