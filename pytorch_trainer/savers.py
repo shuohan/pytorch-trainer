@@ -7,7 +7,6 @@ import numpy as np
 import nibabel as nib
 from .observer import Observer
 from .config import Config
-from .funcs import prob_encode
 
 
 class Saver(Observer):
@@ -148,5 +147,5 @@ class SegPredSaver(PredictionSaver):
         if outputs.shape[1] > 1:
             outputs = torch.argmax(outputs, dim=1, keepdim=True)
         else:
-            outputs = prob_encode(outputs)
+            outputs = torch.sigmoid(outputs)
         return outputs
