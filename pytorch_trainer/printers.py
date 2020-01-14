@@ -1,79 +1,70 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import numpy as np
+
 from .observer import Observer
-from ..config import Config
+from .config import Config
 
 
 class Printer(Observer):
-    """Print the training progress to stdout
+    """Prints the training progress to stdout.
 
-    The printed message has format:
+    Prints the loss/metric of each mini-batch and the mean across mini-batches
+    of each epoch.
 
-        epoch 010/200, batch 01/20, loss 0.1801, metric1: 10.1
+    Example outputs
+
+        training (prefix), epoch 001/200, batch 01/10, name, 0.01 (metric value)
+        training (prefix), epoch 001/200, batch 02/10, name, 0.02 (metric value)
         ...
-        epoch 010/200, batch 20/20, loss 0.1801, metric1: 10.1
-        validation, loss 0.1702, metric1 9.4
-        ------------------------------------------------------
 
     Attributes:
         trainer (Trainer): The trainer holding the training progeress
 
     """
-    def __init__(self, prefix='', show_batch=True):
+    def __init__(self, prefix=''):
         self.prefix = prefix
-        self.show_batch = show_batch
+        self._line_length = 0
 
-    def _calc_pattern(self, prefix, total_num):
-        """Calculte the message pattern for epoch and batch
-            
-        Args:
-            prefix (str): The prefix of the message
-            total_num (int): The number of total epochs/batches
+    def update_on_training_start(self):
+        """Initializes printing message."""
+        self._epoch_pattern = '%%0%dd' % len(str(self.observable.num_epochs))
+        self._batch_pattern = '%%0%dd' % len(str(self.observable.num_batches))
+        self._num_epochs = self._epoch_pattern % self.observable.num_epochs
+        self._num_batches = self._batch_pattern % self.observable.num_batches
 
-        Returns:
-            pattern (str): The calculated pattern
+    @property
+    def _epoch(self):
+        """Returns zero-padded epoch index."""
+        epoch = self._epoch_pattern % (self.observable.epoch + 1)
+        epoch = '/'.join([epoch, self._num_epochs])
+        return epoch
 
-        """
-        num_digits = len(str(total_num))
-        pattern = '%s %%0%dd/%d' % (prefix, num_digits, total_num)
-        return pattern
-
-    def _calc_value_pattern(self):
-        pattern = '%%s %%.%df' % Config.decimals
-        return pattern
+    @property
+    def _batch(self):
+        """Returns zero-padded batch index."""
+        batch = self._batch_pattern % (self.observable.batch + 1)
+        batch = '/'.join([batch, self._num_batches])
+        return batch
 
     def update_on_batch_end(self):
-        """Print the training progress message"""
-        if self.show_batch:
-            message = [self.prefix]
-            ep = self._calc_pattern('epoch', self.observable.num_epochs)
-            bp = self._calc_pattern('batch', self.observable.num_batches)
-            message.append(ep % (self.observable.epoch + 1))
-            message.append(bp % (self.observable.batch + 1))
-            for key, value in self.observable.losses.items():
-                current = value.current
-                if current.size >= 1:
-                    space = ' ' * (len(', '.join(message)) + 2)
-                    sp = self._calc_pattern('sample', current.shape[0])
-                    cp = self._calc_pattern('channel', current.shape[1])
-                    for sample_id, sample in enumerate(current):
-                        for channel_id, channel in enumerate(sample):
-                            tmp = message.copy()
-                            tmp.append(sp % (sample_id + 1))
-                            tmp.append(cp % (channel_id + 1))
-                            tmp.append(('%%.%df' % Config.decimals) % channel)
-                            print(', '.join(tmp), flush=True)
-                # message.append(self._calc_value_pattern() % (key,value.current))
-            # for key, value in self.observable.evaluator.results.items():
-            #     message.append(self._calc_value_pattern() % (key,value.current))
-            # print(', '.join(message), flush=True)
+        """Prints the training progress message for each batch."""
+        line = [self.prefix] if len(self.prefix) > 0 else []
+        line += ['epoch', self._epoch, 'batch', self._batch]
+        for key, value in self.observable.metrics.items():
+            pattern = '%%.%df' % Config.decimals
+            mean = pattern % np.mean(value.current)
+            line.extend([key, mean])
+        line = ', '.join(line)
+        self._line_length = max(len(line), self._line_length)
+        print(line, flush=True)
 
     def update_on_epoch_end(self):
-        message = [self.prefix]
-        for key, value in self.observable.losses.items():
-            message.append(self._calc_value_pattern() % (key, value.mean))
-        # for key, value in self.observable.evaluator.results.items():
-        #     message.append(self._calc_value_pattern() % (key, value.mean))
-        print(', '.join(message), flush=True)
-        print('-' * 80, flush=True)
+        """Prints the training progress message for each epoch."""
+        line = [self.prefix] if len(self.prefix) > 0 else []
+        for key, value in self.observable.metrics.items():
+            pattern = '%%.%df' % Config.decimals
+            mean = pattern % np.mean(value.mean)
+            line.extend([key, mean])
+        print(', '.join(line), flush=True)
+        print('-' * self._line_length, flush=True)

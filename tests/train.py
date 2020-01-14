@@ -11,6 +11,7 @@ from pytorch_trainer.tra_val import BasicTrainer, BasicValidator
 from pytorch_trainer.funcs import transfer_models_to_cuda
 from pytorch_trainer.funcs import transfer_models_to_cpu
 from pytorch_trainer.loggers import Logger
+from pytorch_trainer.printers import Printer
 
 
 class NoiseDataset(Dataset):
@@ -44,7 +45,7 @@ class ValidatorInspector(Observer):
         assert not self.observable.models['model'].training
 
 
-Config.num_epochs = 10
+Config.num_epochs = 20
 Config.logger_fmt = LoggerFormat.LONG
 
 model = torch.nn.Sequential(torch.nn.Conv2d(1, 2, 3, padding=1, bias=False),
@@ -68,14 +69,18 @@ optim = torch.optim.SGD(model.parameters(), lr=0.1)
 trainer = BasicTrainer(model, loss_func, optim, tdl)
 tinspector = TrainerInspector()
 tlogger = Logger('tlog.csv')
+tprinter = Printer('training')
 trainer.register_observer(tinspector)
 trainer.register_observer(tlogger)
+trainer.register_observer(tprinter)
 
 validator = BasicValidator(vdl)
 vinspector = ValidatorInspector()
 vlogger = Logger('vlog.csv')
+vprinter = Printer('validati')
 validator.register_observer(vinspector)
 validator.register_observer(vlogger)
+validator.register_observer(vprinter)
 trainer.register_observer(validator)
 
 trainer.train()

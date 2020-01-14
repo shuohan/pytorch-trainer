@@ -44,6 +44,11 @@ class _TraVal(Observable):
         """Alias of :attr:`losses`."""
         return self.losses
 
+    @property
+    def num_epochs(self):
+        """Returns number of epochs."""
+        return Config.num_epochs
+
     def _transfer(self, data):
         """Transfers data to cpu or cuda."""
         if Config.use_gpu:
