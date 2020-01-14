@@ -12,7 +12,7 @@ class _Basic:
     """Common functions for :class:`BasicTrainer` and :class:`BasicValidator`.
 
     """
-    def _dump(self, input, truth, output):
+    def _dump(self, input, output, truth):
         """Dumps intermediate results at mini-batch."""
         if Config.dump:
             self.dumps['input'] = transfer_data_to_cpu(input).detach()
