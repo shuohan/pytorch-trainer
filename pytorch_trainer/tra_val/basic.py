@@ -65,6 +65,7 @@ class BasicTrainer(Trainer, _Basic):
         self.optim.step()
         self._record_loss(loss)
         self._dump(input, output, truth)
+        return output
 
 
 class BasicValidator(Validator, _Basic):
@@ -87,3 +88,4 @@ class BasicValidator(Validator, _Basic):
         loss = self.observable.loss_func(output, truth)
         self._record_loss(loss)
         self._dump(input, output, truth)
+        return output

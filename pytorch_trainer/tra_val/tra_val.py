@@ -76,9 +76,10 @@ class Trainer(_TraVal):
         for self.batch, self.data in enumerate(self.data_loader):
             self.data = self._transfer(self.data)
             self._notify_observers_on_batch_start()
-            self._train_on_batch(self.data)
+            self.output = self._train_on_batch(self.data)
             self._notify_observers_on_batch_end()
             self.data = None
+            self.output = None
 
     def _train_on_batch(self, data):
         """Trains the models for each batch.
@@ -111,9 +112,10 @@ class Validator(_TraVal, Observer):
                 set_models_to_eval(self.models)
                 for self.batch, self.data in enumerate(self.data_loader):
                     self.data = self._transfer(self.data)
-                    self._validate(self.data)
+                    self.output = self._validate(self.data)
                     self._notify_observers_on_batch_end()
                     self.data = None
+                    self.output = None
             self._notify_observers_on_epoch_end()
 
     def update_on_training_end(self):
