@@ -42,5 +42,9 @@ class Config(Config_):
     """enum LoggerFormat: The format of logger contents."""
     val_period = 10
     """int: The validation periord in number of epochs."""
+    model_period = 10
+    """int: The model saving periord in number of epochs."""
+    pred_period = 10
+    """int: The prediction saving periord in number of epochs."""
     reduction = Reduction.MEAN
     """enum Reduction: The loss reduction method."""

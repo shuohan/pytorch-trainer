@@ -12,6 +12,7 @@ from pytorch_trainer.funcs import transfer_models_to_cuda
 from pytorch_trainer.funcs import transfer_models_to_cpu
 from pytorch_trainer.loggers import Logger
 from pytorch_trainer.printers import Printer
+from pytorch_trainer.savers import ModelSaver, SegPredSaver
 
 
 class NoiseDataset(Dataset):
@@ -70,17 +71,23 @@ trainer = BasicTrainer(model, loss_func, optim, tdl)
 tinspector = TrainerInspector()
 tlogger = Logger('tlog.csv')
 tprinter = Printer('training')
+ms = ModelSaver('models/')
+tp = SegPredSaver('models/tra')
 trainer.register_observer(tinspector)
 trainer.register_observer(tlogger)
 trainer.register_observer(tprinter)
+trainer.register_observer(ms)
+trainer.register_observer(tp)
 
 validator = BasicValidator(vdl)
 vinspector = ValidatorInspector()
 vlogger = Logger('vlog.csv')
 vprinter = Printer('validati')
+vp = SegPredSaver('models/val')
 validator.register_observer(vinspector)
 validator.register_observer(vlogger)
 validator.register_observer(vprinter)
+validator.register_observer(vp)
 trainer.register_observer(validator)
 
 trainer.train()

@@ -3,7 +3,7 @@
 
 from ..buffer import Buffer
 from ..config import Config, Reduction
-from ..funcs import convert_th_to_np, reduce
+from ..funcs import convert_th_to_np, reduce, transfer_data_to_cpu
 from .tra_val import Trainer, Validator
 
 
@@ -15,9 +15,9 @@ class _Basic:
     def _dump(self, input, truth, output):
         """Dumps intermediate results at mini-batch."""
         if Config.dump:
-            self.dumps['input'] = input
-            self.dumps['output'] = output
-            self.dumps['truth'] = truth
+            self.dumps['input'] = transfer_data_to_cpu(input).detach()
+            self.dumps['output'] = transfer_data_to_cpu(output).detach()
+            self.dumps['truth'] = transfer_data_to_cpu(truth).detach()
 
     def _record_loss(self, loss):
         """Records loss."""

@@ -101,10 +101,12 @@ class Validator(_TraVal, Observer):
             self.losses[name] = Buffer(self.num_batches)
         self._notify_observers_on_training_start()
 
+
     def update_on_epoch_end(self):
         """Validates the models after each training epoch."""
         self.epoch = self.observable.epoch
         if ((self.epoch + 1) % Config.val_period) == 0:
+            self._notify_observers_on_epoch_start()
             with torch.no_grad():
                 set_models_to_eval(self.models)
                 for self.batch, self.data in enumerate(self.data_loader):

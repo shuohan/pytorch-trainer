@@ -6,108 +6,147 @@ import torch
 import numpy as np
 import nibabel as nib
 from .observer import Observer
-from ..config import Config
-from ..funcs import prob_encode
+from .config import Config
+from .funcs import prob_encode
 
 
-class ModelSaver(Observer):
-    """Save model at certain epochs
+class Saver(Observer):
+    """An abstract class to save the training progress.
+
+    Attributes:
+        saving_path_prefix (str): The saving filename prefix. It contains
+            slashes if saving to a folder.
+    
+    """
+    def __init__(self, saving_path_prefix):
+        super().__init__()
+        self.saving_path_prefix = saving_path_prefix
+
+    def _create_saving_directory(self):
+        """Creates saving directory"""
+        dirname = os.path.dirname(self.saving_path_prefix)
+        if len(dirname) > 0:
+            os.makedirs(dirname, exist_ok=True)
+
+
+class ModelSaver(Saver):
+    """Saves model periodically.
+
+    The saving period is defined with
+    :attr:`pytorch_trainer.config.Config.model_period`.
     
     Attributes:
-        saving_period (int): Save the model every this number of epochs
-        saving_path_pattern (str): The filename pattern
-        self.others (dict of instances): The other instances to save
+        saving_path_pattern (str): The filename pattern.
+        others (dict): The other instances to save.
 
     """
-    def __init__(self, saving_period, saving_path_prefix, **others):
-        """Initialize"""
-        super().__init__()
-        self.saving_period = saving_period
-        self.saving_path_prefix = saving_path_prefix
-        self.saving_path_pattern = saving_path_prefix + 'checkpoint_{epoch}.pt'
+    def __init__(self, saving_path_prefix, **others):
+        super().__init__(saving_path_prefix)
+        pattern = 'checkpoint_{epoch}.pt'
+        self.saving_path_pattern = self.saving_path_prefix + pattern
         self.others = others
 
     def update_on_training_start(self):
-        """Calculate the number of the digits of the total number of epochs"""
-        self._num_digits = len(str(self.observable.num_epochs))
+        self._epoch_pattern = '%%0%dd' % len(str(self.observable.num_epochs))
         self._create_saving_directory()
         if Config.save_epoch_0:
-            epoch = ('%%0%dd' % self._num_digits) % 0
-            filepath = self.saving_path_pattern.format(epoch=epoch)
-            contents = self._get_saving_contents()
-            torch.save(contents, filepath)
-
-    def _create_saving_directory(self):
-        """Create saving directory"""
-        dirname = os.path.dirname(self.saving_path_prefix)
-        if dirname and not os.path.isdir(dirname):
-            os.makedirs(dirname)
+            self._save()
 
     def update_on_epoch_end(self):
-        """Save the model every self.saving_period number of epochs"""
-        if (self.observable.epoch + 1) % self.saving_period == 0:
-            filepath = self._get_saving_path()
-            contents = self._get_saving_contents()
-            torch.save(contents, filepath)
+        """Saves the model."""
+        if (self.observable.epoch + 1) % Config.model_period == 0:
+            self._save()
 
-    def _get_saving_path(self):
-        epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
+    def _save(self):
+        """Saves contens."""
+        epoch = self.observable.epoch + 1
         filepath = self.saving_path_pattern.format(epoch=epoch)
-        return filepath
+        contents = self._get_saving_contents()
+        torch.save(contents, filepath)
 
     def _get_saving_contents(self):
-        contents = {'epoch': self.observable.epoch,
-                    'loss': self.observable.losses['loss'].mean,
-                    'engine_config': Config.save_dict()}
+        losses = {k: v.mean for k, v in self.observable.losses.items()}
+        contents = {'epoch': self.observable.epoch, 'loss': losses,
+                    'tainer_config': Config.save_dict()}
         for name, model in self.observable.models.items():
             contents[name] = model.state_dict()
-        contents['optimizer'] = self.observable.optimizer.state_dict()
+        contents['optim'] = self.observable.optim.state_dict()
         contents.update(self.others)
         return contents
 
 
-class PredictionSaver(ModelSaver):
-    def __init__(self, saving_period, saving_path_prefix, labels=None):
-        super().__init__(saving_period, saving_path_prefix)
-        self.labels = labels
+class PredictionSaver(Saver):
+    """Abstract class to save the predictions.
+    
+    The saving period is defined with
+    :attr:`pytorch_trainer.config.Config.pred_period`.
+
+    Attributes:
+        subdir (str): The subdirectory to save the current batch.
+    
+    """
+    def update_on_training_start(self):
+        self._epoch_pattern = '%%0%dd' % len(str(self.observable.num_epochs))
+        self._batch_pattern = '%%0%dd' % len(str(self.observable.num_batches))
+        self._create_saving_directory()
+
+    def update_on_epoch_start(self):
+        if (self.observable.epoch + 1) % Config.pred_period == 0:
+            epoch = self._epoch_pattern % (self.observable.epoch + 1)
+            self.subdir = '_'.join([self.saving_path_prefix, epoch])
+            os.makedirs(self.subdir, exist_ok=True)
 
     def update_on_batch_end(self):
-        if (self.observable.epoch + 1) % self.saving_period != 0:
-            return
+        if (self.observable.epoch + 1) % Config.pred_period == 0:
+            self._save_outputs()
+            self._save_inputs()
+            self._save_truths()
 
-        epoch = ('%%0%dd' % self._num_digits) % (self.observable.epoch + 1)
-        subdir = self.saving_path_prefix + epoch
-        if not os.path.isdir(subdir):
-            os.makedirs(subdir)
-        if self.observable.output.shape[1] > 1:
-            segs = torch.argmax(self.observable.output, dim=1, keepdim=True)
+    def _save_outputs(self):
+        """Saves the outputs."""
+        raise NotImplementedError
+
+    def _save_truths(self):
+        """Saves the truths."""
+        raise NotImplementedError
+
+    def _save_inputs(self):
+        """Saves the inputs."""
+        raise NotImplementedError
+
+
+class SegPredSaver(PredictionSaver):
+    """Saves prediction of segmentations periodically.
+    
+    """
+    def _save_outputs(self):
+        self._save(self._convert_outputs(), 'output.nii.gz')
+
+    def _save_truths(self):
+        self._save(self.observable.dumps['truth'], 'truth.nii.gz')
+
+    def _save_inputs(self):
+        self._save(self.observable.dumps['input'], 'input.nii.gz' )
+
+    def _save(self, contents, suffix):
+        """Saves the contents."""
+        num_samples_d = len(str(contents.shape[0]))
+        num_channels_d = len(str(contents.shape[1]))
+        batch_id = self._batch_pattern % (self.observable.batch + 1)
+        for sample_id, sample in enumerate(contents):
+            sample_id = ('%%0%dd' % num_samples_d) % (sample_id + 1)
+            for channel_id, channel in enumerate(sample):
+                channel_id = ('%%0%dd' % num_channels_d) % (channel_id + 1)
+                filename = [batch_id, sample_id, channel_id, suffix]
+                filename = os.path.join(self.subdir, '_'.join(filename))
+                obj = nib.Nifti1Image(channel.numpy().astype(float), np.eye(4))
+                obj.to_filename(filename)
+
+    def _convert_outputs(self):
+        """Converts output segmentations for saving."""
+        outputs = self.observable.dumps['output']
+        if outputs.shape[1] > 1:
+            outputs = torch.argmax(outputs, dim=1, keepdim=True)
         else:
-            segs = prob_encode(self.observable.output)
-
-        inputs = self.observable.input
-        truths = self.observable.truth
-        for sample_id, seg in enumerate(segs):
-            batch = self.observable.batch
-            basename = ('%%0%dd' % len(str(self.observable.num_batches))) % (batch+1)
-            basename += '_' + ('%%0%dd' % len(str(len(segs)))) % (sample_id+1)
-
-            input_filename = basename + '_input.nii.gz'
-            truth_filename = basename + '_truth.nii.gz'
-            output_filename = basename + '_output.nii.gz'
-            input_filename = os.path.join(subdir, input_filename)
-            truth_filename = os.path.join(subdir, truth_filename)
-            output_filename = os.path.join(subdir, output_filename)
-
-            input = inputs[sample_id, ...]
-            obj = nib.Nifti1Image(input.numpy().astype(float), np.eye(4))
-            obj.to_filename(input_filename)
-
-            truth = truths[sample_id, ...]
-            obj = nib.Nifti1Image(truth.numpy().astype(float), np.eye(4))
-            obj.to_filename(truth_filename)
-
-            obj = nib.Nifti1Image(seg.numpy().astype(float), np.eye(4))
-            obj.to_filename(output_filename)
-
-    def update_on_epoch_end(self):
-        pass
+            outputs = prob_encode(outputs)
+        return outputs
