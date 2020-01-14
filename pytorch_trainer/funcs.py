@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""Functions to convert data and models."""
-
 import torch
 
-from ..config import Config, Reduction
+from .config import Config, Reduction
 
 
 def convert_th_to_np(data):
@@ -147,3 +145,13 @@ def reduce(value, dims=tuple()):
         else:
             raise RuntimeError(Config.reduction, 'is not supported.')
     return value
+
+
+def count_trainable_paras(model):
+    """Counts the trainable parameters of a model.
+
+    Args:
+        model (torch.nn.Module): The model to count.
+
+    """
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
