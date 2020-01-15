@@ -22,7 +22,8 @@ class _Basic:
     def _record_loss(self, loss):
         """Records loss."""
         dims = tuple(range(2, len(loss.shape)))
-        loss = reduce(loss, dims=dims)
+        if len(dims) > 0:
+            loss = reduce(loss, dims=dims)
         self.losses['model'].append(convert_th_to_np(loss))
 
 
