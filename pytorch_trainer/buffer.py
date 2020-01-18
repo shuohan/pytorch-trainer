@@ -86,7 +86,7 @@ class Buffer:
             self._ind = 0
         else:
             self._ind += 1
-        value = np.array(value).squeeze()
+        value = np.array(value) # .squeeze()
         if self._ind > 0:
             if value.shape != self._buffer[self._ind - 1].shape:
                 m = ('The value to append has different shape from the '
