@@ -59,6 +59,7 @@ class ModelSaver(Saver):
     def _save(self):
         """Saves contens."""
         epoch = self.observable.epoch + 1
+        epoch = self._epoch_pattern % epoch
         filepath = self.saving_path_pattern.format(epoch=epoch)
         contents = self._get_saving_contents()
         torch.save(contents, filepath)
@@ -66,7 +67,7 @@ class ModelSaver(Saver):
     def _get_saving_contents(self):
         losses = {k: v.mean for k, v in self.observable.losses.items()}
         contents = {'epoch': self.observable.epoch, 'loss': losses,
-                    'tainer_config': Config.save_dict()}
+                    'trainer_config': Config.save_dict()}
         for name, model in self.observable.models.items():
             contents[name] = model.state_dict()
         contents['optim'] = self.observable.optim.state_dict()
