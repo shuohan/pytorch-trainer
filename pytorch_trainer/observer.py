@@ -3,12 +3,23 @@
 """
 class Observer:
     """Gets notified by :class:`Subject` to update its status.
+
+    Note:
+        This a minxin class. If a class inherts from multiple parent classes,
+        this class should be put in front. If all parent class are mixins,
+        the order does not matter.
+
+        Any class inheriting from this class should also be a mixin in order to
+        use multiple inheritance, i.e., it should implement
+
+        >>> super().__init__(*args, **kwargs)
     
-    Args:
+    Attributes:
         subject (Subject): The subject that is been observed.
 
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.subject = None
 
     def update_on_train_start(self):
@@ -41,7 +52,8 @@ class Subject:
 
     Note:
         This a minxin class. If a class inherts from multiple parent classes,
-        :class:`Subject` should be put in front.
+        this class should be put in front. If all parent class are mixins,
+        the order does not matter.
 
         Any class inheriting from this class should also be a mixin in order to
         use multiple inheritance, i.e., it should implement
