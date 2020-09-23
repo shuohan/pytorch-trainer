@@ -46,31 +46,31 @@ class ModelSaver(Saver):
         self.others = others
 
     def update_on_training_start(self):
-        self._epoch_pattern = '%%0%dd' % len(str(self.observable.num_epochs))
+        self._epoch_pattern = '%%0%dd' % len(str(self.subject.num_epochs))
         self._create_saving_directory()
         if Config.save_epoch_0:
             self._save()
 
     def update_on_epoch_end(self):
         """Saves the model."""
-        if (self.observable.epoch + 1) % Config.model_period == 0:
+        if (self.subject.epoch + 1) % Config.model_period == 0:
             self._save()
 
     def _save(self):
         """Saves contens."""
-        epoch = self.observable.epoch + 1
+        epoch = self.subject.epoch + 1
         epoch = self._epoch_pattern % epoch
         filepath = self.saving_path_pattern.format(epoch=epoch)
         contents = self._get_saving_contents()
         torch.save(contents, filepath)
 
     def _get_saving_contents(self):
-        losses = {k: v.mean for k, v in self.observable.losses.items()}
-        contents = {'epoch': self.observable.epoch, 'loss': losses,
+        losses = {k: v.mean for k, v in self.subject.losses.items()}
+        contents = {'epoch': self.subject.epoch, 'loss': losses,
                     'trainer_config': Config.save_dict()}
-        for name, model in self.observable.models.items():
+        for name, model in self.subject.models.items():
             contents[name] = model.state_dict()
-        contents['optim'] = self.observable.optim.state_dict()
+        contents['optim'] = self.subject.optim.state_dict()
         contents.update(self.others)
         return contents
 
@@ -86,18 +86,18 @@ class PredictionSaver(Saver):
     
     """
     def update_on_training_start(self):
-        self._epoch_pattern = '%%0%dd' % len(str(self.observable.num_epochs))
-        self._batch_pattern = '%%0%dd' % len(str(self.observable.num_batches))
+        self._epoch_pattern = '%%0%dd' % len(str(self.subject.num_epochs))
+        self._batch_pattern = '%%0%dd' % len(str(self.subject.num_batches))
         self._create_saving_directory()
 
     def update_on_epoch_start(self):
-        if (self.observable.epoch + 1) % Config.pred_period == 0:
-            epoch = self._epoch_pattern % (self.observable.epoch + 1)
+        if (self.subject.epoch + 1) % Config.pred_period == 0:
+            epoch = self._epoch_pattern % (self.subject.epoch + 1)
             self.subdir = '_'.join([self.saving_path_prefix, epoch])
             os.makedirs(self.subdir, exist_ok=True)
 
     def update_on_batch_end(self):
-        if (self.observable.epoch + 1) % Config.pred_period == 0:
+        if (self.subject.epoch + 1) % Config.pred_period == 0:
             self._save_outputs()
             self._save_inputs()
             self._save_truths()
@@ -123,16 +123,16 @@ class SegPredSaver(PredictionSaver):
         self._save(self._convert_outputs(), 'output.nii.gz')
 
     def _save_truths(self):
-        self._save(self.observable.dumps['truth'], 'truth.nii.gz')
+        self._save(self.subject.dumps['truth'], 'truth.nii.gz')
 
     def _save_inputs(self):
-        self._save(self.observable.dumps['input'], 'input.nii.gz' )
+        self._save(self.subject.dumps['input'], 'input.nii.gz' )
 
     def _save(self, contents, suffix):
         """Saves the contents."""
         num_samples_d = len(str(contents.shape[0]))
         num_channels_d = len(str(contents.shape[1]))
-        batch_id = self._batch_pattern % (self.observable.batch + 1)
+        batch_id = self._batch_pattern % (self.subject.batch + 1)
         for sample_id, sample in enumerate(contents):
             sample_id = ('%%0%dd' % num_samples_d) % (sample_id + 1)
             for channel_id, channel in enumerate(sample):
@@ -144,7 +144,7 @@ class SegPredSaver(PredictionSaver):
 
     def _convert_outputs(self):
         """Converts output segmentations for saving."""
-        outputs = self.observable.dumps['output']
+        outputs = self.subject.dumps['output']
         if outputs.shape[1] > 1:
             outputs = torch.argmax(outputs, dim=1, keepdim=True)
         else:

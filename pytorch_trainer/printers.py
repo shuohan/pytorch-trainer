@@ -28,22 +28,22 @@ class Printer(Observer):
 
     def update_on_training_start(self):
         """Initializes printing message."""
-        self._epoch_pattern = '%%0%dd' % len(str(self.observable.num_epochs))
-        self._batch_pattern = '%%0%dd' % len(str(self.observable.num_batches))
-        self._num_epochs = self._epoch_pattern % self.observable.num_epochs
-        self._num_batches = self._batch_pattern % self.observable.num_batches
+        self._epoch_pattern = '%%0%dd' % len(str(self.subject.num_epochs))
+        self._batch_pattern = '%%0%dd' % len(str(self.subject.num_batches))
+        self._num_epochs = self._epoch_pattern % self.subject.num_epochs
+        self._num_batches = self._batch_pattern % self.subject.num_batches
 
     @property
     def _epoch(self):
         """Returns zero-padded epoch index."""
-        epoch = self._epoch_pattern % (self.observable.epoch + 1)
+        epoch = self._epoch_pattern % (self.subject.epoch + 1)
         epoch = '/'.join([epoch, self._num_epochs])
         return epoch
 
     @property
     def _batch(self):
         """Returns zero-padded batch index."""
-        batch = self._batch_pattern % (self.observable.batch + 1)
+        batch = self._batch_pattern % (self.subject.batch + 1)
         batch = '/'.join([batch, self._num_batches])
         return batch
 
@@ -51,7 +51,7 @@ class Printer(Observer):
         """Prints the training progress message for each batch."""
         line = [self.prefix] if len(self.prefix) > 0 else []
         line += ['epoch', self._epoch, 'batch', self._batch]
-        for key, value in self.observable.metrics.items():
+        for key, value in self.subject.metrics.items():
             pattern = '%%.%df' % Config.decimals
             mean = pattern % np.mean(value.current)
             line.extend([key, mean])
@@ -62,7 +62,7 @@ class Printer(Observer):
     def update_on_epoch_end(self):
         """Prints the training progress message for each epoch."""
         line = [self.prefix] if len(self.prefix) > 0 else []
-        for key, value in self.observable.metrics.items():
+        for key, value in self.subject.metrics.items():
             pattern = '%%.%df' % Config.decimals
             mean = pattern % np.mean(value.mean)
             line.extend([key, mean])

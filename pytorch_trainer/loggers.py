@@ -20,7 +20,7 @@ class Writer:
     @property
     def _epoch(self):
         """Returns the current epoch id."""
-        return self.logger.observable.epoch + 1
+        return self.logger.subject.epoch + 1
 
     def write(self, prefix, values):
         """Writes contents to the file.
@@ -48,14 +48,14 @@ class WideWriter(Writer):
     """
     def write_line(self):
         line = '%d' % self._epoch
-        for value in self.logger.observable.metrics.values():
+        for value in self.logger.subject.metrics.values():
             mean = ('%%.%df' % Config.decimals) % value.mean
             line = ','.join([line, mean]) + '\n'
             self.logger.file.write(line )
             self.logger.file.flush()
 
     def write_header(self):
-        header = ['epoch'] + list(self.logger.observable.metrics.keys())
+        header = ['epoch'] + list(self.logger.subject.metrics.keys())
         header = ','.join(header) + '\n'
         self.logger.file.write(header)
         self.logger.file.flush()
@@ -72,7 +72,7 @@ class LongWriter(Writer):
 
     """
     def write_line(self):
-        for key, value in self.logger.observable.metrics.items():
+        for key, value in self.logger.subject.metrics.items():
             all_values = value.all
             for batch_id, batch in enumerate(all_values):
                 for sample_id, sample in enumerate(batch):

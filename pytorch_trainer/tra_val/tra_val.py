@@ -63,21 +63,21 @@ class Trainer(_TraVal):
     """
     def train(self):
         """Trains the models."""
-        self._notify_observers_on_training_start()
+        self.notify_observers_on_train_start()
         for self.epoch in range(Config.num_epochs):
-            self._notify_observers_on_epoch_start()
+            self.notify_observers_on_epoch_start()
             set_models_to_train(self.models)
             self._train_on_epoch()
-            self._notify_observers_on_epoch_end()
-        self._notify_observers_on_training_end()
+            self.notify_observers_on_epoch_end()
+        self.notify_observers_on_train_end()
 
     def _train_on_epoch(self):
         """Trains the models for each epoch."""
         for self.batch, self.data in enumerate(self.data_loader):
             self.data = self._transfer(self.data)
-            self._notify_observers_on_batch_start()
+            self.notify_observers_on_batch_start()
             self.output = self._train_on_batch(self.data)
-            self._notify_observers_on_batch_end()
+            self.notify_observers_on_batch_end()
             self.data = None
             self.output = None
 
@@ -95,31 +95,31 @@ class Validator(_TraVal, Observer):
     """Abstract class for model validation.
 
     """
-    def update_on_training_start(self):
+    def update_on_train_start(self):
         """Initializes loss buffers."""
-        for name in self.observable.losses.keys():
-            self.models[name] = self.observable.models[name]
+        for name in self.subject.losses.keys():
+            self.models[name] = self.subject.models[name]
             self.losses[name] = Buffer(self.num_batches)
-        self._notify_observers_on_training_start()
+        self.notify_observers_on_train_start()
 
 
     def update_on_epoch_end(self):
         """Validates the models after each training epoch."""
-        self.epoch = self.observable.epoch
+        self.epoch = self.subject.epoch
         if ((self.epoch + 1) % Config.val_period) == 0:
-            self._notify_observers_on_epoch_start()
+            self.notify_observers_on_epoch_start()
             with torch.no_grad():
                 set_models_to_eval(self.models)
                 for self.batch, self.data in enumerate(self.data_loader):
                     self.data = self._transfer(self.data)
                     self.output = self._validate(self.data)
-                    self._notify_observers_on_batch_end()
+                    self.notify_observers_on_batch_end()
                     self.data = None
                     self.output = None
-            self._notify_observers_on_epoch_end()
+            self.notify_observers_on_epoch_end()
 
-    def update_on_training_end(self):
-        self._notify_observers_on_training_end()
+    def update_on_train_end(self):
+        self.notify_observers_on_train_end()
 
     def _validate(self, data):
         """Validates the models.

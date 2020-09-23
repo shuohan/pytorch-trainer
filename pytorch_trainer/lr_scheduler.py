@@ -35,7 +35,7 @@ class ValidationLRScheduler(LRScheduler):
 
     """
     def get_loss(self):
-        return self.observable.losses['model'].current.mean()
+        return self.subject.losses['model'].current.mean()
 
     def update_on_epoch_end(self):
         self.scheduler.step(self.get_loss())
