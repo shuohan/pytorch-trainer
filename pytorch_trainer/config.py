@@ -1,50 +1,39 @@
-# -*- coding: utf-8 -*-
-
-from enum import Enum
-from config import Config as Config_
-
-
-class LoggerFormat(Enum):
-    LONG = 'long'
-    WIDE = 'wide'
-
-
-class Reduction(Enum):
-    MEAN = 'mean'
-    SUM = 'sum'
+from singleton_config import Config as Config_
 
 
 class Config(Config_):
     """Global configurations.
 
-    >>> from pytorch_trainer import Config
-    >>> Config.attribute = new_value
-
-    to update the configurations.
-
-    Note:
-        Avoid copying the value of a :class:`Config` attribute to another
-        variable, since this variable would not be updated automatically when
-        :class:`Config` changes.
+    Attributes:
+        decimals (int): The number of decimals to print and log.
+        use_cuda (bool): Use CUDA GPU to train or validate.
+        save_epoch0 (bool): Save before updating any weights.
+        num_epochs (int): The number of epochs to train the networks.
+        valid_step (int): Validate every this number of epochs.
+        save_ckpt_step (int): Save a checkpoint every this number of epochs.
+        save_train_step (int): Save training results every this # epochs.
+        save_valid_step (int): Save validation results every this # epochs.
 
     """
-    decimals = 4
-    """int: The number of decimals to print and log."""
-    use_gpu = True
-    """bool: Use GPU to train and validate."""
-    save_epoch_0 = False
-    """bool: Save before updating any weights."""
-    num_epochs = 100
-    """int: The number of epochs to train the networks."""
-    dump = True
-    """bool: Dump the intermediate results into cpu."""
-    logger_fmt = LoggerFormat.WIDE
-    """enum LoggerFormat: The format of logger contents."""
-    val_period = 10
-    """int: The validation periord in number of epochs."""
-    model_period = 10
-    """int: The model saving periord in number of epochs."""
-    pred_period = 10
-    """int: The prediction saving periord in number of epochs."""
-    reduction = Reduction.MEAN
-    """enum Reduction: The loss reduction method."""
+    def __init__(self):
+        super().__init__()
+        self.add_config('decimals', 4)
+        self.add_config('use_cuda', True)
+        self.add_config('save_epoch0', False)
+        self.add_config('num_epochs', 100)
+        self.add_config('valid_step', 10)
+        self.add_config('save_ckpt_step', 10)
+        self.add_config('save_train_step', 10)
+        self.add_config('save_valid_step', 10)
+
+
+# from enum import Enum
+    # reduction = Reduction.MEAN
+    # enum Reduction: The loss reduction method.
+
+    # dump = True
+    # bool: Dump the intermediate results into cpu.
+# class Reduction(Enum):
+#     MEAN = 'mean'
+#     SUM = 'sum'
+# 
