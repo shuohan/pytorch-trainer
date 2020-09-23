@@ -243,7 +243,7 @@ class Printer(Observer):
 
     def _create_epoch_pattern(self):
         """Creates the pattern to print epoch info."""
-        pattern = '%%02d' % self.subject.num_epochs
+        pattern = '%%0%dd' % self.subject.num_epochs
         num_epochs = pattern % self.subject.num_epochs
         self._epoch_pattern = 'epoch %s/%s' % (pattern, num_epochs)
 
@@ -294,7 +294,7 @@ class BatchEpochPrinter(EpochPrinter):
 
     def _create_batch_pattern(self):
         """Creates the pattern to print batch info."""
-        pattern = '%%02d' % self.subject.num_batches
+        pattern = '%%0%dd' % self.subject.num_batches
         num_batches = pattern % self.subject.num_batches
         self._batch_pattern = 'batch %s/%s' % (pattern, num_batch)
 
