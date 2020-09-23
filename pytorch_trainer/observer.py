@@ -13,14 +13,24 @@ class Observer:
         use multiple inheritance, i.e., it should implement
 
         >>> super().__init__(*args, **kwargs)
-    
-    Attributes:
-        subject (Subject): The subject that is been observed.
 
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.subject = None
+        self._subject = None
+
+    @property
+    def subject(self):
+        """The subject that is been observed."""
+        return self._subject
+
+    @subject.setter
+    def subject(self, subject):
+        self.set_subject(subject)
+
+    def set_subject(self, subject):
+        """Sets the subject. Enforce the type of acceptable subjects here."""
+        self._subject = subject
 
     def update_on_train_start(self):
         """Update just before the training starts"""
@@ -104,3 +114,26 @@ class Subject:
         """"Notifies the observers on the end of the training."""
         for observer in self._observers:
             observer.update_on_train_end()
+
+
+class SubjectObserver(Subject, Observer):
+    """A subject that is an observer at the same time.
+
+    """
+    def update_on_train_start(self):
+        self.notify_observers_on_train_start()
+
+    def update_on_epoch_start(self):
+        self.notify_observers_on_epoch_start()
+
+    def update_on_batch_start(self):
+        self.notify_observers_on_batch_start()
+
+    def update_on_batch_end(self):
+        self.notify_observers_on_batch_end()
+
+    def update_on_epoch_end(self):
+        self.notify_observers_on_epoch_end()
+
+    def update_on_train_end(self):
+        self.notify_observers_on_train_end()
