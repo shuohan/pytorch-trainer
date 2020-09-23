@@ -25,6 +25,7 @@ class Config(Config_):
         self.add_config('save_ckpt_step', 10)
         self.add_config('save_train_step', 10)
         self.add_config('save_valid_step', 10)
+        self.add_config('log_samples', False)
 
 
 # from enum import Enum
