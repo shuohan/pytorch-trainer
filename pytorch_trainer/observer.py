@@ -26,11 +26,12 @@ class Observer:
 
     @subject.setter
     def subject(self, subject):
-        self.set_subject(subject)
-
-    def set_subject(self, subject):
-        """Sets the subject. Enforce the type of acceptable subjects here."""
+        self._check_subject_type(subject)
         self._subject = subject
+
+    def _check_subject_type(self, subject):
+        """Enforces the type of acceptable subjects here."""
+        assert isinstance(subject, Subject)
 
     def update_on_train_start(self):
         """Update just before the training starts"""
@@ -114,6 +115,31 @@ class Subject:
         """"Notifies the observers on the end of the training."""
         for observer in self._observers:
             observer.update_on_train_end()
+
+    @property
+    def num_epochs(self):
+        """Returns the number of epochs."""
+        raise NotImplementedError
+    
+    @property
+    def num_batches(self):
+        """Returns the number batches per epoch."""
+        raise NotImplementedError
+
+    @property
+    def batch_size(self):
+        """Returns the number of samples per mini-batch."""
+        raise NotImplementedError
+
+    @property
+    def epoch_ind(self):
+        """Returns the current epoch index (1-based)."""
+        raise NotImplementedError
+
+    @property
+    def batch_ind(self):
+        """Returns the current batch index (1-based)."""
+        raise NotImplementedError
 
 
 class SubjectObserver(Subject, Observer):
