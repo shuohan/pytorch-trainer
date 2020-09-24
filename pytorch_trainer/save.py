@@ -1,152 +1,274 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import os
 import torch
 import numpy as np
 import nibabel as nib
+from collections import namedtuple
+from pathlib import Path
+from queue import Queue
+from threading import Thread
+from enum import Enum
+
 from .observer import Observer
-from .config import Config
+from .utils import NamedData
 
 
 class Saver(Observer):
     """An abstract class to save the training progress.
 
-    Attributes:
-        saving_path_prefix (str): The saving filename prefix. It contains
-            slashes if saving to a folder.
-    
+    Args:
+        dirname (str or pathlib.Path): The directory to save results.
+        save_init (bool): Save before any weight update.
+
     """
-    def __init__(self, saving_path_prefix):
+    def __init__(self, dirname):
         super().__init__()
-        self.saving_path_prefix = saving_path_prefix
+        self.dirname = Path(dirname)
 
-    def _create_saving_directory(self):
-        """Creates saving directory"""
-        dirname = os.path.dirname(self.saving_path_prefix)
-        if len(dirname) > 0:
-            os.makedirs(dirname, exist_ok=True)
-
-
-class ModelSaver(Saver):
-    """Saves model periodically.
-
-    The saving period is defined with
-    :attr:`pytorch_trainer.config.Config.model_period`.
-    
-    Attributes:
-        saving_path_pattern (str): The filename pattern.
-        others (dict): The other instances to save.
-
-    """
-    def __init__(self, saving_path_prefix, **others):
-        super().__init__(saving_path_prefix)
-        pattern = 'checkpoint_{epoch}.pt'
-        self.saving_path_pattern = self.saving_path_prefix + pattern
-        self.others = others
-
-    def update_on_training_start(self):
-        self._epoch_pattern = '%%0%dd' % len(str(self.subject.num_epochs))
-        self._create_saving_directory()
-        if Config.save_epoch_0:
-            self._save()
-
-    def update_on_epoch_end(self):
-        """Saves the model."""
-        if (self.subject.epoch + 1) % Config.model_period == 0:
+    def update_on_train_start(self):
+        """Creates the results folder."""
+        self.dirname.mkdir(parents=True, exist_ok=True)
+        if self.save_init:
             self._save()
 
     def _save(self):
-        """Saves contens."""
-        epoch = self.subject.epoch + 1
-        epoch = self._epoch_pattern % epoch
-        filepath = self.saving_path_pattern.format(epoch=epoch)
-        contents = self._get_saving_contents()
-        torch.save(contents, filepath)
-
-    def _get_saving_contents(self):
-        losses = {k: v.mean for k, v in self.subject.losses.items()}
-        contents = {'epoch': self.subject.epoch, 'loss': losses,
-                    'trainer_config': Config.save_dict()}
-        for name, model in self.subject.models.items():
-            contents[name] = model.state_dict()
-        contents['optim'] = self.subject.optim.state_dict()
-        contents.update(self.others)
-        return contents
+        """Implement save in this function."""
+        raise NotImplementedError
 
 
-class PredictionSaver(Saver):
-    """Abstract class to save the predictions.
+class ThreadedSaver(Saver):
+    """Saves with threads.
+
+    """
+    def __init__(self, dirname):
+        super().__init__(dirname)
+        self._thread = self._init_thread()
+
+    def _init_thread(self):
+        raise NotImplementedError
+
+    def update_on_train_start(self):
+        super().update_on_train_start()
+        self._thread.start()
     
-    The saving period is defined with
-    :attr:`pytorch_trainer.config.Config.pred_period`.
+    def update_on_train_end(self):
+        self._thread.join()
+
+
+class CheckpointSaver(Saver):
+    """Saves model periodically.
 
     Attributes:
-        subdir (str): The subdirectory to save the current batch.
+        step (int): Save a checkpoint every this number of epochs.
+        kwargs (dict): The other stuff to save.
+
+    """
+    def __init__(self, dirname, step=100, save_init=False, **kwargs):
+        super().__init__(dirname)
+        self.step = step
+        self.kwargs = kwargs
+
+    def update_on_train_start(self):
+        super().update_on_train_start()
+        pattern = 'epoch-%%0%dd.pt' % self.subject.num_epochs
+        self._pattern = self.dirname.joinpath(pattern)
+
+    def update_on_epoch_end(self):
+        """Saves a checkpoint."""
+        if self.subject.epoch_ind % self.step == 0:
+            self._save()
+
+    def _save(self):
+        filename = self._pattern % self.subject.epoch_ind
+        contents = {'epoch': self.subject.epoch_ind,
+                    'model': self.subject.get_model_state_dict(),
+                    'optim': self.subject.get_optim_state_dict(),
+                    **self.kwargs}
+        torch.save(contents, filepath)
+
+
+class SaveType(str, Enum):
+    """The type of :class:`SaveImage`.
+
+    Attributes:
+        NIFTI: Save the image as a nifit file.
+
+    """
+    NIFTI = 'nifti'
+
+
+class ImageType(str, Enum):
+    """The type of image to save.
+
+    Attributes:
+        IMAGE: Just an image.
+        SEG: The image is a segmentation.
+        SEG_ACTIV: Apply activation (sigmoid) to the segmentation.
     
     """
-    def update_on_training_start(self):
-        self._epoch_pattern = '%%0%dd' % len(str(self.subject.num_epochs))
-        self._batch_pattern = '%%0%dd' % len(str(self.subject.num_batches))
-        self._create_saving_directory()
+    IMAEG = 'image'
+    SEG = 'seg'
+    SEG_ACTIV = 'seg_activ'
 
-    def update_on_epoch_start(self):
-        if (self.subject.epoch + 1) % Config.pred_period == 0:
-            epoch = self._epoch_pattern % (self.subject.epoch + 1)
-            self.subdir = '_'.join([self.saving_path_prefix, epoch])
-            os.makedirs(self.subdir, exist_ok=True)
+
+def create_save_image(save_type, image_type):
+    """Creates an instance of :class:`SaveImage`.
+
+    Args:
+        save_type (enum SaveType or str): The type of :class:`SaveImage`.
+        image_type (enum ImageType or str): The type of image to save.
+
+    Returns:
+        SaveImage: An instance of :class:`SaveImage`.
+        
+    """
+    save_type = SaveType(save_type)
+    image_type = ImageType(image_type)
+    if save_type is SaveType.NIFTI:
+        save_image = SaveNifti()
+    if image_type is ImageType.SEG:
+        save_image = SaveSeg(save_image)
+    elif image_type is ImageType.SEG_ACTIV:
+        save_image = SaveSegActiv(save_image)
+    return save_image
+
+
+class SaveImage:
+    """Writes images to dick.
+    
+    """
+    def save(self, filename, image):
+        """Saves an image to filename.
+
+        Args:
+            filename (str or pathlib.Path): The filename to save.
+            image (numpy.ndarray): The image to save.
+        
+        """
+        raise NotImeplementedError
+
+
+class SaveNifti(SaveImage):
+    """Writes images as nifti files.
+    
+    """
+    def save(self, filename, image):
+        filename = str(filename)
+        if not filename.endswith('.nii') and not filename.endswith('.nii.gz'):
+            filename = filename + '.nii.gz'
+        obj = nib.Nifti1Image(image.numpy(), np.eye(4))
+        obj.to_filename(filename)
+
+
+class SaveSeg(SaveImage):
+    """Saves a segmentation to file.
+
+    Attributes:
+        save_image (SaveImage): The instance to wrap around.
+    
+    """
+    def __init__(self, save_image):
+        self.save_image = save_image
+
+    def save(self, filename, image):
+        image = self._convert_seg(image)
+        self.save_image.save(filename, image)
+
+    def _convert_seg(self, image):
+        """Converts a probability map to segmentation."""
+        if image.shape[0] > 1:
+            image = torch.argmax(image, dim=0, keepdim=True)
+        return image 
+
+
+class SaveSegActiv(SaveSeg):
+    """Applies activation before saving the segmentation.
+    
+    """
+    def _convert_seg(self, image):
+        if image.shape[0] > 1:
+            image = torch.argmax(image, dim=0, keepdim=True)
+        else:
+            image = torch.sigmoid(image)
+        return image
+
+
+class ImageThread(Thread):
+    """Saves images in a thread.
+
+    Attributes:
+        save_image (SaveImage): Save images to files.
+    
+    """
+    def __init__(self, save_image, queue):
+        super().__init__()
+        self.save_image = save_image
+        self.queue = queue
+
+    def run(self):
+        while True:
+            data = self.queue.get()
+            self.queue.task_done()
+            if data is None:
+                break
+            self.save_image(data.name, data.data)
+
+
+class ImageSaver(ThreadedSaver):
+    """Saves images.
+
+    Attributes:
+        attrs (list[str]): The attribute names of :attr:`subject` to save.
+        step (int): Save images every this number of epochs.
+        queue (queue.Queue): The queue to give data to its thread.
+        save_type (str): The type of files to save the images to.
+        image_type (str): The type of images to save.
+    
+    """
+    def __init__(self, dirname, attrs=[], step=10, save_type='nifti',
+                 image_type='image'):
+        self.save_type = save_type
+        self.image_type = image_type
+        super().__init__()
+        self.dirname = dirname
+        self.queue = Queue()
+        self.attrs = attrs
+        self.step = step
+        self._pattern = None
+
+    def update_on_train_start(self):
+        super().update_on_train_start()
+        self._pattern = self._get_filename_pattern()
+
+    def _init_thread(self):
+        save_image = create_save_image(self.save_type, self.image_type)
+        return ImageThread(save_image, self.queue)
+
+    def _get_filename_pattern(self):
+        epoch_pattern = 'epoch-%%0%dd' % self.subject.num_epochs
+        batch_pattern = 'batch-%%0%dd' % self.subject.num_batches
+        sample_pattern = 'sample-%%0%dd' % self.subject.batch_size
+        dirname = Path(self.dirname, epoch_pattern, batch_pattern)
+        dirname.mkdir(parents=True, exist_ok=True)
+        basename = '%s_%%s' % sample_pattern
+        pattern = str(dirname.joinpath(basename))
+        return pattern
 
     def update_on_batch_end(self):
-        if (self.subject.epoch + 1) % Config.pred_period == 0:
-            self._save_outputs()
-            self._save_inputs()
-            self._save_truths()
+        if self.subject.epoch_ind % self.step == 0:
+            self._save()
 
-    def _save_outputs(self):
-        """Saves the outputs."""
-        raise NotImplementedError
+    def _save(self):
+        for attr in self.attrs:
+            batch = getattr(self.subject, attr)
+            if isinstance(batch, NamedData):
+                for ind, (name, sample) in enumerate(zip(*batch)):
+                    filename = self._get_filename(sample_ind, attr) + name
+                    self.queue.put(NamedData(filename, sample))
+            else:
+                for sample_ind, sample in enumerate(batch):
+                    filename = self._get_filename(sample_ind, attr)
+                    self.queue.put(NamedData(filename, sample))
 
-    def _save_truths(self):
-        """Saves the truths."""
-        raise NotImplementedError
-
-    def _save_inputs(self):
-        """Saves the inputs."""
-        raise NotImplementedError
-
-
-class SegPredSaver(PredictionSaver):
-    """Saves prediction of segmentations periodically.
-    
-    """
-    def _save_outputs(self):
-        self._save(self._convert_outputs(), 'output.nii.gz')
-
-    def _save_truths(self):
-        self._save(self.subject.dumps['truth'], 'truth.nii.gz')
-
-    def _save_inputs(self):
-        self._save(self.subject.dumps['input'], 'input.nii.gz' )
-
-    def _save(self, contents, suffix):
-        """Saves the contents."""
-        num_samples_d = len(str(contents.shape[0]))
-        num_channels_d = len(str(contents.shape[1]))
-        batch_id = self._batch_pattern % (self.subject.batch + 1)
-        for sample_id, sample in enumerate(contents):
-            sample_id = ('%%0%dd' % num_samples_d) % (sample_id + 1)
-            for channel_id, channel in enumerate(sample):
-                channel_id = ('%%0%dd' % num_channels_d) % (channel_id + 1)
-                filename = [batch_id, sample_id, channel_id, suffix]
-                filename = os.path.join(self.subdir, '_'.join(filename))
-                obj = nib.Nifti1Image(channel.numpy().astype(float), np.eye(4))
-                obj.to_filename(filename)
-
-    def _convert_outputs(self):
-        """Converts output segmentations for saving."""
-        outputs = self.subject.dumps['output']
-        if outputs.shape[1] > 1:
-            outputs = torch.argmax(outputs, dim=1, keepdim=True)
-        else:
-            outputs = torch.sigmoid(outputs)
-        return outputs
+    def _get_filename(self, sample_ind, name):
+        return self._pattern % (self.subject.epoch_ind,
+                                self.subject.batch_ind,
+                                sample_ind, name)
