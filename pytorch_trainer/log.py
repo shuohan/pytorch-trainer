@@ -4,7 +4,6 @@ import warnings
 from collections.abc import Iterable
 
 from .observer import Observer, SubjectObserver
-from .config import Config
 
 
 class DataQueue_:
@@ -43,7 +42,7 @@ class DataQueue_:
         """
         value = np.array(value)
         self._ind = 0 if self._ind == self.maxlen - 1 else self._ind + 1
-        if self._ind > 0 and self._shape_is_valid(value):
+        if self._ind > 0 and not self._shape_is_valid(value):
             raise ValueError('The value to add has different shape.')
         self._buffer[self._ind] = value
 
@@ -90,33 +89,76 @@ class DataQueue_:
             return np.stack(self._buffer[:self._ind+1], axis=0)
 
 
-class DataQueue(SubjectObserver, DataQueue_):
+class DataQueue(SubjectObserver):
     """Wrapper of :class:`DataQueue_` to add observer and subject functions.
 
     Attributes:
-        name (str or list[str]): Describes the contents of this queue. When
-            multiple, its length should match the shape of the data to add.
-
-    Args:
-        batch_size (int): The number of mini-batches per epoch. The class will
-            set :attr:`maxlen` to this ``batch_size``.
+        attr (str or list[str]): The name(s) of the attribute(s) of the
+            subject to monitor. When it is iterable, its length should match the
+            shape of the data to add.
 
     """
-    def __init__(self, batch_size, name='data'):
-        super().__init__(batch_size)
-        self.name = name
+    def __init__(self, attr):
+        super().__init__()
+        self.attr = attr
+        self._queue = None
+
+    def update_on_train_start(self):
+        self._queue = DataQueue_(self.num_batches)
+        super().update_on_train_start()
+
+    @property
+    def batch_size(self):
+        return self.subject.batch_size
+
+    def __len__(self):
+        return len(self._queue)
 
     def put(self, value):
-        if isinstance(self.name, Iterable):
-            assert len(self.name) == len(value)
-        super().put(value)
+        self._queue.put(value)
+
+    @property
+    def mean(self):
+        return self._queue.mean
+
+    @property
+    def current(self):
+        return self._queue.current
+
+    @property
+    def all(self):
+        return self._queue.all
+
+    @property
+    def num_epochs(self):
+        return self.subject.num_epochs
+
+    @property
+    def num_batches(self):
+        return self.subject.num_batches
+
+    @property
+    def epoch_ind(self):
+        return self.subject.epoch_ind
+
+    @property
+    def batch_ind(self):
+        return self.subject.batch_ind
+
+    def update_on_batch_end(self):
+        if isinstance(self.attr, list):
+            value = [getattr(self.subject, n) for n in self.attr]
+        else:
+            value = getattr(self.subject, self.attr)
+        self.put(value)
+        super().update_on_batch_end()
 
 
 class Writer:
     """Write contents into a .csv file.
 
     Attributes:
-        filename (pathlib.Path): The converted ``filename``.
+        filename (pathlib.Path): The filename of the output file.
         fields (iterable[str]): The names of the fields.
 
     Args:
@@ -149,11 +191,11 @@ class Writer:
         """Writes a line into the file.
 
         Args:
-            data (Iterable): The contents to write. The order should be the same
+            data (iterable): The contents to write. The order should be the same
                 with :attr:`fields`.
 
         """
-        line = ','.join(['%f' % d for d in data]) + '\n'
+        line = ','.join(['%g' % d for d in data]) + '\n'
         self._file.write(line)
         self._file.flush()
 
@@ -173,9 +215,8 @@ class Logger(Observer):
         self.filename = filename
         self._writer = None
 
-    def set_subject(self, subject):
+    def _check_subject_type(self, subject):
         assert isinstance(subject, DataQueue)
-        super().set_subject(subject)
 
     def update_on_train_end(self):
         """Closes the writer."""
@@ -192,8 +233,10 @@ class Logger(Observer):
             list: The appended list.
 
         """
-        func = 'extend' if isinstance(data_elem, Iterable) else 'append'
-        data_list.getattr(func)(data_elem)
+        if isinstance(data_elem, list):
+            data_list.extend(data_elem)
+        else:
+            data_list.append(data_elem)
         return data_list
 
 
@@ -203,14 +246,14 @@ class BatchLogger(Logger):
     """
     def update_on_train_start(self):
         """Initializes the writer to log data."""
-        fields = self._append_data(['epoch', 'batch'], self.subject.name)
+        fields = self._append_data(['epoch', 'batch'], self.subject.attr)
         self._writer = Writer(self.filename, fields)
         self._writer.open()
 
     def update_on_batch_end(self):
         """Logs the data into the file."""
-        contents = [self.subject.epoch, self.subject.batch]
-        contents = self._append_data(contents, self.subject.current)
+        contents = [self.subject.epoch_ind, self.subject.batch_ind]
+        contents = self._append_data(contents, self.subject.current.tolist())
         self._writer.write_line(contents)
 
 
@@ -220,13 +263,14 @@ class EpochLogger(Logger):
     """
     def update_on_train_start(self):
         """Initializes the writer to log data."""
-        fields = self._append_data(['epoch'], self.subject.name)
+        fields = self._append_data(['epoch'], self.subject.attr)
         self._writer = Writer(self.filename, fields)
         self._writer.open()
 
     def update_on_epoch_end(self):
         """Logs the data into the file."""
-        contents = self._append_data([self.subject.epoch], self.subject.mean)
+        contents = [self.subject.epoch_ind]
+        contents = self._append_data(contents, self.subject.mean.tolist())
         self._writer.write_line(contents)
 
 
@@ -234,33 +278,38 @@ class Printer(Observer):
     """Abstract class to print the training or validation progress to stdout.
 
     Attributes:
+        decimals (int): The number of decimals to print.
         subject (DataQueue): The subject to print data from.
 
     """
+    def __init__(self, decimals=4):
+        super().__init__()
+        self.decimals = decimals
+
     def update_on_train_start(self):
         """Initializes printing message."""
         self._create_epoch_pattern()
 
     def _create_epoch_pattern(self):
         """Creates the pattern to print epoch info."""
-        pattern = '%%0%dd' % self.subject.num_epochs
+        pattern = '%%0%dd' % len(str(self.subject.num_epochs))
         num_epochs = pattern % self.subject.num_epochs
         self._epoch_pattern = 'epoch %s/%s' % (pattern, num_epochs)
 
     def _append_data(self, data_list, data_name, data_elem):
         """Appends a data element with its name into the list."""
-        if isinstance(fields, Iterable) and isinstance(data, Iterable):
+        if isinstance(data_elem, Iterable):
             data_elem = [self._convert_num(d) for d in data_elem]
-            data_elem = ['%s %s' for n, d in zip(data_name, data_elem)]
+            data_elem = ['%s %s' % (n, d) for n, d in zip(data_name, data_elem)]
             data_list.extend(data_elem)
         else:
-            data_elem = '%s %s' % (data_name, self._convert_num(d))
+            data_elem = '%s %s' % (data_name, self._convert_num(data_elem))
             data_list.append(data_elem)
         return data_list
 
     def _convert_num(self, num):
         """Converts a number to scientific format."""
-        return ('%%.%de' % Config().decimals) % num
+        return ('%%.%de' % self.decimals) % num
 
 
 class EpochPrinter(Printer):
@@ -270,15 +319,16 @@ class EpochPrinter(Printer):
         print_sep (bool): Print "------" after each message if True.
 
     """
-    def __init__(self, print_sep=True):
-        super().__init__(print_sep)
+    def __init__(self, decimals=4, print_sep=True):
+        super().__init__(decimals)
+        self.print_sep = print_sep
 
     def update_on_epoch_end(self):
         """Prints the progress message at the end of each epoch."""
-        name = self.subject.name
-        data = self.subject.mean
-        line = [self._epoch_pattern % self.subject.epoch]
-        line = self._append_data(line, name, data)
+        attr = self.subject.attr
+        data = self.subject.mean.tolist()
+        line = [self._epoch_pattern % self.subject.epoch_ind]
+        line = self._append_data(line, attr, data)
         print(', '.join(line), flush=True)
         if self.print_sep:
             print('------')
@@ -289,20 +339,20 @@ class BatchEpochPrinter(EpochPrinter):
 
     """
     def update_on_train_start(self):
+        self._create_batch_pattern()
         super().update_on_train_start()
-        self._create_batch_pattern(self)
 
     def _create_batch_pattern(self):
         """Creates the pattern to print batch info."""
-        pattern = '%%0%dd' % self.subject.num_batches
+        pattern = '%%0%dd' % len(str(self.subject.num_batches))
         num_batches = pattern % self.subject.num_batches
-        self._batch_pattern = 'batch %s/%s' % (pattern, num_batch)
+        self._batch_pattern = 'batch %s/%s' % (pattern, num_batches)
 
     def update_on_batch_end(self):
         """Prints the progress message at the each of each batch."""
-        name = self.subject.name
-        data = self.subject.current
-        line = [self._epoch_pattern % self.subject.epoch,
-                self._batch_pattern % self.subject.batch]
-        line = self._append_data(line, name, data)
+        attr = self.subject.attr
+        data = self.subject.current.tolist()
+        line = [self._epoch_pattern % self.subject.epoch_ind,
+                self._batch_pattern % self.subject.batch_ind]
+        line = self._append_data(line, attr, data)
         print(', '.join(line), flush=True)
