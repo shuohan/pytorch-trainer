@@ -259,7 +259,7 @@ class SimpleValidator(_SimpleMixin, Validator):
             self.notify_observers_on_epoch_start()
             with torch.no_grad():
                 self.subject.net.eval() 
-                for self._batch_ind, data in enumerate(self.data_loader):
+                for self._batch_ind, data in enumerate(self.dataloader):
                     self._parse_input(data[0])
                     self._parse_truth(data[1])
                     self.notify_observers_on_batch_start()

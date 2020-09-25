@@ -25,20 +25,19 @@ class Check(Observer):
     def update_on_batch_end(self):
         if self.subject.batch_ind == 1:
             assert self.subject.net.weight.grad.tolist() == [[6], [6]]
-            print('batch 1 successful')
         elif self.subject.batch_ind == 2:
             assert self.subject.net.weight.grad.tolist() == [[22], [22]]
-            print('batch 2 successful')
         elif self.subject.batch_ind == 3:
             assert self.subject.net.weight.grad.tolist() == [[38], [38]]
-            print('batch 3 successful')
 
 
 def test_train_and_save():
     tmp = {'first': 1, 'second': [1, 2, 3]}
     ckpt_saver1 = CheckpointSaver('results_save/ckpt1', step=1, **tmp)
     ckpt_saver2 = CheckpointSaver('results_save/ckpt2', step=2, save_init=True)
-    image_saver = ImageSaver('results_save/image', step=2,
+    train_saver = ImageSaver('results_save/train', step=2,
+                             attrs=['input_cpu', 'output_cpu', 'truth_cpu'])
+    valid_saver = ImageSaver('results_save/valid', step=2,
                              attrs=['input_cpu', 'output_cpu', 'truth_cpu'])
 
     net = torch.nn.Linear(1, 2, bias=False).cuda()
@@ -51,11 +50,21 @@ def test_train_and_save():
     assert trainer.num_epochs == 2
     assert trainer.batch_size == 4
 
+    loader = DataLoader(Dataset(), batch_size=3)
+    validator = SimpleValidator(loader, step=1)
+    validator.register(valid_saver)
+
+    trainer.register(validator)
     trainer.register(ckpt_saver1)
     trainer.register(ckpt_saver2)
-    trainer.register(image_saver)
+    trainer.register(train_saver)
     trainer.register(Check())
     trainer.train()
+
+    assert validator.batch_size == 3
+    assert validator.num_batches == 4
+    assert validator.num_epochs == 2
+    assert validator.loss == -23946
 
     ckpt = torch.load('results_save/ckpt1/epoch-2.pt')
     assert ckpt['first'] == 1
@@ -79,7 +88,7 @@ def test_train_and_save():
     assert Path('results_save/ckpt2/epoch-2.pt').is_file()
 
     for batch_ind in [1, 2, 3]:
-        dirname = 'results_save/image/epoch-2/batch-%d' % batch_ind
+        dirname = 'results_save/train/epoch-2/batch-%d' % batch_ind
         for sample_ind in [1, 2, 3, 4]:
             ind = (batch_ind - 1) * 4 + sample_ind - 1
             for suffix in ['truth_cpu_y_%d', 'input_cpu_x_%d', 'output_cpu']:
@@ -89,23 +98,30 @@ def test_train_and_save():
                 filename = Path(dirname, filename)
                 assert filename.is_file()
 
-    image = nib.load(Path('results_save/image/epoch-2/batch-1',
+    assert trainer.loss == -20300
+
+    image = nib.load(Path('results_save/train/epoch-2/batch-1',
                           'sample-1_input_cpu_x_0.nii.gz')).get_fdata()
     assert image.tolist() == [0]
-    image = nib.load(Path('results_save/image/epoch-2/batch-1',
+    image = nib.load(Path('results_save/train/epoch-2/batch-1',
                           'sample-3_truth_cpu_y_2.nii.gz')).get_fdata()
     assert image.tolist() == [3]
 
-    image = nib.load(Path('results_save/image/epoch-2/batch-1',
+    image = nib.load(Path('results_save/train/epoch-2/batch-1',
                           'sample-2_input_cpu_x_1.nii.gz')).get_fdata()
     assert image.tolist() == [1]
-    image = nib.load(Path('results_save/image/epoch-2/batch-2',
+    image = nib.load(Path('results_save/train/epoch-2/batch-2',
                           'sample-2_truth_cpu_y_5.nii.gz')).get_fdata()
     assert image.tolist() == [6]
 
-    image = nib.load(Path('results_save/image/epoch-2/batch-3',
+    image = nib.load(Path('results_save/train/epoch-2/batch-3',
                           'sample-4_output_cpu.nii.gz')).get_fdata()
     assert image.tolist() == [-2926, -2926]
+
+    image = nib.load(Path('results_save/valid/epoch-2/batch-4',
+                          'sample-1_output_cpu.nii.gz')).get_fdata()
+    assert image.tolist() == [-3582, -3582]
+    print('successful')
 
 
 if __name__ == '__main__':
