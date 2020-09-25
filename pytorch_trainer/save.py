@@ -19,13 +19,13 @@ class Saver(Observer):
         save_init (bool): Save before any weight update.
 
     """
-    def __init__(self, dirname):
+    def __init__(self, dirname, save_init=False):
         super().__init__()
         self.dirname = Path(dirname)
+        self.save_init = save_init
 
     def update_on_train_start(self):
         """Creates the results folder."""
-        self.dirname.mkdir(parents=True, exist_ok=True)
         if self.save_init:
             self._save()
 
@@ -38,8 +38,8 @@ class ThreadedSaver(Saver):
     """Saves with threads.
 
     """
-    def __init__(self, dirname):
-        super().__init__(dirname)
+    def __init__(self, dirname, save_init=False):
+        super().__init__(dirname, save_init)
         self._thread = self._init_thread()
 
     def _init_thread(self):
@@ -62,14 +62,15 @@ class CheckpointSaver(Saver):
 
     """
     def __init__(self, dirname, step=100, save_init=False, **kwargs):
-        super().__init__(dirname)
+        super().__init__(dirname, save_init)
         self.step = step
         self.kwargs = kwargs
 
     def update_on_train_start(self):
+        self.dirname.mkdir(parents=True, exist_ok=True)
+        pattern = 'epoch-%%0%dd.pt' % len(str(self.subject.num_epochs))
+        self._pattern = str(self.dirname.joinpath(pattern))
         super().update_on_train_start()
-        pattern = 'epoch-%%0%dd.pt' % self.subject.num_epochs
-        self._pattern = self.dirname.joinpath(pattern)
 
     def update_on_epoch_end(self):
         """Saves a checkpoint."""
@@ -79,10 +80,10 @@ class CheckpointSaver(Saver):
     def _save(self):
         filename = self._pattern % self.subject.epoch_ind
         contents = {'epoch': self.subject.epoch_ind,
-                    'model': self.subject.get_model_state_dict(),
-                    'optim': self.subject.get_optim_state_dict(),
+                    'model_state_dict': self.subject.get_model_state_dict(),
+                    'optim_state_dict': self.subject.get_optim_state_dict(),
                     **self.kwargs}
-        torch.save(contents, filepath)
+        torch.save(contents, filename)
 
 
 class SaveType(str, Enum):
@@ -209,7 +210,7 @@ class ImageThread(Thread):
             self.queue.task_done()
             if data is None:
                 break
-            self.save_image(data.name, data.data)
+            self.save_image.save(data.name, data.data)
 
 
 class ImageSaver(ThreadedSaver):
@@ -227,27 +228,25 @@ class ImageSaver(ThreadedSaver):
                  image_type='image'):
         self.save_type = save_type
         self.image_type = image_type
-        super().__init__()
-        self.dirname = dirname
         self.queue = Queue()
         self.attrs = attrs
         self.step = step
         self._pattern = None
+        super().__init__(dirname)
 
     def update_on_train_start(self):
-        super().update_on_train_start()
         self._pattern = self._get_filename_pattern()
+        super().update_on_train_start()
 
     def _init_thread(self):
         save_image = create_save_image(self.save_type, self.image_type)
         return ImageThread(save_image, self.queue)
 
     def _get_filename_pattern(self):
-        epoch_pattern = 'epoch-%%0%dd' % self.subject.num_epochs
-        batch_pattern = 'batch-%%0%dd' % self.subject.num_batches
-        sample_pattern = 'sample-%%0%dd' % self.subject.batch_size
+        epoch_pattern = 'epoch-%%0%dd' % len(str(self.subject.num_epochs))
+        batch_pattern = 'batch-%%0%dd' % len(str(self.subject.num_batches))
+        sample_pattern = 'sample-%%0%dd' % len(str(self.subject.batch_size))
         dirname = Path(self.dirname, epoch_pattern, batch_pattern)
-        dirname.mkdir(parents=True, exist_ok=True)
         basename = '%s_%%s' % sample_pattern
         pattern = str(dirname.joinpath(basename))
         return pattern
@@ -260,15 +259,22 @@ class ImageSaver(ThreadedSaver):
         for attr in self.attrs:
             batch = getattr(self.subject, attr)
             if isinstance(batch, NamedData):
-                for ind, (name, sample) in enumerate(zip(*batch)):
-                    filename = self._get_filename(sample_ind, attr) + name
+                for sample_ind, (name, sample) in enumerate(zip(*batch)):
+                    filename = self._get_filename(sample_ind + 1, attr)
+                    filename = '_'.join([filename, name])
                     self.queue.put(NamedData(filename, sample))
             else:
                 for sample_ind, sample in enumerate(batch):
-                    filename = self._get_filename(sample_ind, attr)
+                    filename = self._get_filename(sample_ind + 1, attr)
                     self.queue.put(NamedData(filename, sample))
 
     def _get_filename(self, sample_ind, name):
-        return self._pattern % (self.subject.epoch_ind,
-                                self.subject.batch_ind,
-                                sample_ind, name)
+        filename = self._pattern % (self.subject.epoch_ind,
+                                    self.subject.batch_ind,
+                                    sample_ind, name)
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
+        return filename
+
+    def update_on_train_end(self):
+        self.queue.put(None)
+        super().update_on_train_end()

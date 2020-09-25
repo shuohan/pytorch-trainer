@@ -93,14 +93,14 @@ class DataQueue(SubjectObserver):
     """Wrapper of :class:`DataQueue_` to add observer and subject functions.
 
     Attributes:
-        attr (str or list[str]): The name(s) of the attribute(s) of the
+        attrs (str or list[str]): The name(s) of the attribute(s) of the
             subject to monitor. When it is iterable, its length should match the
             shape of the data to add.
 
     """
-    def __init__(self, attr):
+    def __init__(self, attrs):
         super().__init__()
-        self.attr = attr
+        self.attrs = attrs
         self._queue = None
 
     def update_on_train_start(self):
@@ -146,10 +146,10 @@ class DataQueue(SubjectObserver):
         return self.subject.batch_ind
 
     def update_on_batch_end(self):
-        if isinstance(self.attr, list):
-            value = [getattr(self.subject, n) for n in self.attr]
+        if isinstance(self.attrs, list):
+            value = [getattr(self.subject, n) for n in self.attrs]
         else:
-            value = getattr(self.subject, self.attr)
+            value = getattr(self.subject, self.attrs)
         self.put(value)
         super().update_on_batch_end()
 
@@ -246,7 +246,7 @@ class BatchLogger(Logger):
     """
     def update_on_train_start(self):
         """Initializes the writer to log data."""
-        fields = self._append_data(['epoch', 'batch'], self.subject.attr)
+        fields = self._append_data(['epoch', 'batch'], self.subject.attrs)
         self._writer = Writer(self.filename, fields)
         self._writer.open()
 
@@ -263,7 +263,7 @@ class EpochLogger(Logger):
     """
     def update_on_train_start(self):
         """Initializes the writer to log data."""
-        fields = self._append_data(['epoch'], self.subject.attr)
+        fields = self._append_data(['epoch'], self.subject.attrs)
         self._writer = Writer(self.filename, fields)
         self._writer.open()
 
@@ -325,10 +325,10 @@ class EpochPrinter(Printer):
 
     def update_on_epoch_end(self):
         """Prints the progress message at the end of each epoch."""
-        attr = self.subject.attr
+        attrs = self.subject.attrs
         data = self.subject.mean.tolist()
         line = [self._epoch_pattern % self.subject.epoch_ind]
-        line = self._append_data(line, attr, data)
+        line = self._append_data(line, attrs, data)
         print(', '.join(line), flush=True)
         if self.print_sep:
             print('------')
@@ -350,9 +350,9 @@ class BatchEpochPrinter(EpochPrinter):
 
     def update_on_batch_end(self):
         """Prints the progress message at the each of each batch."""
-        attr = self.subject.attr
+        attrs = self.subject.attrs
         data = self.subject.current.tolist()
         line = [self._epoch_pattern % self.subject.epoch_ind,
                 self._batch_pattern % self.subject.batch_ind]
-        line = self._append_data(line, attr, data)
+        line = self._append_data(line, attrs, data)
         print(', '.join(line), flush=True)
