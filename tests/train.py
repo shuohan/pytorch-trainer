@@ -35,15 +35,15 @@ class NoiseDataset(Dataset):
 
 class TrainerInspector(Observer):
     def update_on_training_start(self):
-        assert self.observable.losses['model'].max_length == 8
+        assert self.subject.losses['model'].max_length == 8
     def update_on_batch_end(self):
-        assert self.observable.models['model'].training
+        assert self.subject.models['model'].training
 
 class ValidatorInspector(Observer):
     def update_on_training_start(self):
-        assert self.observable.losses['model'].max_length == 2
+        assert self.subject.losses['model'].max_length == 2
     def update_on_batch_end(self):
-        assert not self.observable.models['model'].training
+        assert not self.subject.models['model'].training
 
 
 Config.num_epochs = 20

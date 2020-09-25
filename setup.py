@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-from distutils.core import setup
+from setuptools import setup, find_packages
 from glob import glob
 import subprocess
 
@@ -9,10 +7,10 @@ command = ['git', 'describe', '--tags']
 version = subprocess.check_output(command).decode().strip()
 
 setup(name='pytorch-trainer',
-            version=version,
-            description='PyTorch trainer',
-            author='Shuo Han',
-            author_email='shan50@jhu.edu',
-            scripts=scripts,
-            install_requires=['torch', 'torchvision'],
-            packages=['pytorch_trainer'])
+      version=version,
+      description='PyTorch trainer',
+      author='Shuo Han',
+      author_email='shan50@jhu.edu',
+      scripts=scripts,
+      install_requires=['torch', 'torchvision'],
+      packages=find_packages(include=['pytorch_trainer']))

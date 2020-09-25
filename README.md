@@ -1,12 +1,15 @@
-# PyTorch Engine
+# PyTorch Trainer
 
-The repo provides the following features:
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![coverage report](tests/coverage.svg)](https://gitlab.com/shan-deep-networks/pytorch-trainer)
 
-1. Switch between 2D and 3D 
-2. Train a segmentation network
-3. Perform validation during training
-4. Print, log, and save the model during training
+Use the observer design pattern to record training process. The basic idea is to implement a class `Trainer` as the subject of the observer design pattern, and use observers to validate models, save checkpoints, print out training progress, etc.
 
-## Example usage
+## Install
 
-Check [pytorch-residual-unet](https://gitlab.com/shan-pytorch-nets/pytorch-residual-unet.git) for an example.
+```bash
+pip install git+https://gitlab.com/shan-deep-networks/pytorch-trainer.git
+```
+
+## Documentation
+
+See [documentation](https://shan-deep-networks.gitlab.io/pytorch-trainer) for more details.
