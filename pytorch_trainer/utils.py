@@ -11,11 +11,14 @@ Attributes:
 """
 
 
-def count_trainable_paras(net):
+def count_trainable_params(net):
     """Counts the trainable parameters of a network.
 
     Args:
         net (torch.nn.Module): The network to count.
+
+    Returns:
+        int: The number of trainable parameters.
 
     """
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
