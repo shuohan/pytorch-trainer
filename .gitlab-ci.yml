@@ -1,0 +1,29 @@
+image: pytorch/pytorch:1.6.0-cuda10.1-cudnn7-runtime
+
+stages:
+  - test
+  - deploy
+
+before_script:
+  - pip install sphinx sphinx_rtd_theme pytest coverage nibabel
+
+coverage:
+  stage: test
+  script:
+    - coverage run --source=pytorch_trainer -m pytest tests/
+    - coverage report -m
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  only:
+  - master
+  - develop
+
+pages:
+  stage: deploy
+  script:
+  - sphinx-build docs/source docs/build
+  - mv docs/build public/
+  artifacts:
+    paths:
+    - public
+  only:
+  - master
