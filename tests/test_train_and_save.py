@@ -54,12 +54,17 @@ def test_train_and_save():
     validator = SimpleValidator(loader, step=1)
     validator.register(valid_saver)
 
+    evaluator = SimpleEvaluator({'sum': lambda x, y: torch.sum(x + y)})
+
     trainer.register(validator)
+    trainer.register(evaluator)
     trainer.register(ckpt_saver1)
     trainer.register(ckpt_saver2)
     trainer.register(train_saver)
     trainer.register(Check())
     trainer.train()
+
+    assert evaluator.sum == -20132
 
     assert validator.batch_size == 3
     assert validator.num_batches == 4
