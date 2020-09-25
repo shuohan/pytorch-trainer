@@ -1,3 +1,6 @@
+"""Classes to print and log training and validation progress.
+
+"""
 import numpy as np
 from pathlib import Path
 import warnings
@@ -349,7 +352,7 @@ class BatchEpochPrinter(EpochPrinter):
         self._batch_pattern = 'batch %s/%s' % (pattern, num_batches)
 
     def update_on_batch_end(self):
-        """Prints the progress message at the each of each batch."""
+        """Prints the progress message at the end of each batch."""
         attrs = self.subject.attrs
         data = self.subject.current.tolist()
         line = [self._epoch_pattern % self.subject.epoch_ind,

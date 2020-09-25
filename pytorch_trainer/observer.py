@@ -87,32 +87,32 @@ class Subject:
         self._observers.append(observer)
 
     def notify_observers_on_train_start(self):
-        """"Notifies registered observers on the start of the training."""
+        """Notifies registered observers on the start of the training."""
         for observer in self._observers:
             observer.update_on_train_start()
 
     def notify_observers_on_epoch_start(self):
-        """"Notifies the observers on the start of each epoch."""
+        """Notifies the observers on the start of each epoch."""
         for observer in self._observers:
             observer.update_on_epoch_start()
 
     def notify_observers_on_batch_start(self):
-        """"Notifies the observers on the start of each mini-batch."""
+        """Notifies the observers on the start of each mini-batch."""
         for observer in self._observers:
             observer.update_on_batch_start()
 
     def notify_observers_on_batch_end(self):
-        """"Notifies the observers on the end of each mini-batch."""
+        """Notifies the observers on the end of each mini-batch."""
         for observer in self._observers:
             observer.update_on_batch_end()
 
     def notify_observers_on_epoch_end(self):
-        """"Notifies the observers on the end of each epoch."""
+        """Notifies the observers on the end of each epoch."""
         for observer in self._observers:
             observer.update_on_epoch_end()
 
     def notify_observers_on_train_end(self):
-        """"Notifies the observers on the end of the training."""
+        """Notifies the observers on the end of the training."""
         for observer in self._observers:
             observer.update_on_train_end()
 

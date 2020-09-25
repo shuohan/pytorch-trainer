@@ -65,6 +65,7 @@ def test_train_and_save():
     trainer.train()
 
     assert evaluator.sum == -20132
+    assert evaluator.batch_size == 4
 
     assert validator.batch_size == 3
     assert validator.num_batches == 4

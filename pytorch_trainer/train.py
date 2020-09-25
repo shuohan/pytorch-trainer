@@ -1,3 +1,6 @@
+"""Classes to train, validate, and evaluate an algorithm.
+
+"""
 import torch
 
 from .observer import Subject, SubjectObserver, Observer
@@ -87,7 +90,7 @@ class Evaluator(Observer):
         return self.subject.batch_size
 
 
-class _SimpleMixin:
+class SimpleMixin:
     """Mixin class for :class:`SimpleTrainer` and :class:`SimpleValidator`.
 
     Attributes:
@@ -197,7 +200,7 @@ class _SimpleMixin:
         return name, data, data_cuda
 
 
-class SimpleTrainer(_SimpleMixin, Trainer):
+class SimpleTrainer(SimpleMixin, Trainer):
     """Trains an algorithm with one network, optim, and loss function.
 
     Attributes:
@@ -244,7 +247,7 @@ class SimpleTrainer(_SimpleMixin, Trainer):
         return self.optim.state_dict()
 
 
-class SimpleValidator(_SimpleMixin, Validator):
+class SimpleValidator(SimpleMixin, Validator):
     """Validates an algorithm with one network, optim, and loss_func.
 
     """
@@ -276,11 +279,6 @@ class SimpleValidator(_SimpleMixin, Validator):
 
 class SimpleEvaluator(Evaluator):
     """Evaluates an algorithm with one network, optim, and loss function.
-
-    Attributes:
-        eval_funcs (dict): The :class:`str` name and function pairs of the
-            evaluation functions. The functions should be defined as
-            ``func(output, truth)``.
     
     """
     def _check_subject_type(self, subject):

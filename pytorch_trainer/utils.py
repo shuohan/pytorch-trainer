@@ -1,10 +1,13 @@
+"""Utility functions and classes.
+
+"""
 from collections import namedtuple
 
 
 NamedData = namedtuple('NamedData', ['name', 'data'])
 """Data with its name.
 
-Attributes:
+Args:
     name (str): The name of the data.
     data (numpy.ndarray): The data.
     
