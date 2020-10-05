@@ -225,15 +225,21 @@ class ImageSaver(ThreadedSaver):
         queue (queue.Queue): The queue to give data to its thread.
         save_type (str): The type of files to save the images to.
         image_type (str): The type of images to save.
+        file_struct (str): Indicates the file structure. For example,
+            ``"epoch/batch/sample"`` saves all samples of a mini-batch as
+            `dirname/epoch-ind/batch-ind/sample-ind_name.ext``.
+            ``"epoch/batch"`` saves the samples as
+            ``dirname/epoch-ind/batch-ind_sample-ind_name.ext``.
     
     """
     def __init__(self, dirname, attrs=[], step=10, save_type='nifti',
-                 image_type='image'):
+                 image_type='image', file_struct='epoch/batch/sample'):
         self.save_type = save_type
         self.image_type = image_type
         self.queue = Queue()
         self.attrs = attrs
         self.step = step
+        self.file_struct = file_struct
         self._pattern = None
         super().__init__(dirname)
 
@@ -249,10 +255,19 @@ class ImageSaver(ThreadedSaver):
         epoch_pattern = 'epoch-%%0%dd' % len(str(self.subject.num_epochs))
         batch_pattern = 'batch-%%0%dd' % len(str(self.subject.num_batches))
         sample_pattern = 'sample-%%0%dd' % len(str(self.subject.batch_size))
-        dirname = Path(self.dirname, epoch_pattern, batch_pattern)
-        basename = '%s_%%s' % sample_pattern
-        pattern = str(dirname.joinpath(basename))
+        all_parts = ['epoch', 'batch', 'sample']
+        file_parts = self.file_struct.split('/')
+        assert set(file_parts).issubset(set(all_parts))
+        pattern = self.dirname
+        for ap in all_parts:
+            sub_pattern = eval('_'.join([ap, 'pattern']))
+            pattern = self._join_pattern(sub_pattern, pattern, ap in file_parts)
+        pattern = self._join_pattern('%s', pattern, False)
         return pattern
+
+    def _join_pattern(self, sub, all, as_path=True):
+        """Concatenates ``sub_pattern`` after ``pattern``."""
+        return str(Path(all, sub)) if as_path else '_'.join([all, sub])
 
     def update_on_batch_end(self):
         if self.subject.epoch_ind % self.step == 0:
