@@ -45,6 +45,7 @@ class ThreadedSaver(Saver):
     """
     def __init__(self, dirname, save_init=False):
         super().__init__(dirname, save_init)
+        self.queue = Queue()
         self._thread = self._init_thread()
 
     def _init_thread(self):
@@ -53,8 +54,9 @@ class ThreadedSaver(Saver):
     def update_on_train_start(self):
         super().update_on_train_start()
         self._thread.start()
-    
+
     def update_on_train_end(self):
+        self.queue.put(None)
         self._thread.join()
 
 
@@ -271,18 +273,18 @@ class ImageSaver(ThreadedSaver):
             `dirname/epoch-ind/batch-ind/sample-ind_name.ext``.
             ``"epoch/batch"`` saves the samples as
             ``dirname/epoch-ind/batch-ind_sample-ind_name.ext``.
-    
+
     """
     def __init__(self, dirname, attrs=[], step=10, save_type='nifti',
-                 image_type='image', file_struct='epoch/batch/sample'):
+                 image_type='image', file_struct='epoch/batch/sample',
+                 save_init=False):
         self.save_type = save_type
         self.image_type = image_type
-        self.queue = Queue()
         self.attrs = attrs
         self.step = step
         self.file_struct = file_struct
         self._pattern = None
-        super().__init__(dirname)
+        super().__init__(dirname, save_init=save_init)
 
     def update_on_train_start(self):
         self._pattern = self._get_filename_pattern()
@@ -333,7 +335,3 @@ class ImageSaver(ThreadedSaver):
                                     sample_ind, name)
         Path(filename).parent.mkdir(parents=True, exist_ok=True)
         return filename
-
-    def update_on_train_end(self):
-        self.queue.put(None)
-        super().update_on_train_end()
