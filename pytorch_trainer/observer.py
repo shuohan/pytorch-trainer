@@ -76,44 +76,47 @@ class Subject:
         super().__init__(*args, **kwargs)
         self._observers = list()
 
-    def register(self, observer):
+    def register(self, observer, name=None):
         """Registers an observer to get notified.
 
         Args:
             observer (Observer): The observer to register.
+            name (str): The name associated with the observer. If ``None``,
+                use the index as its name.
 
         """
         observer.subject = self
-        self._observers.append(observer)
+        name = str(len(self._observers)) if name is None else name
+        self._observers[name] = observer
 
     def notify_observers_on_train_start(self):
         """Notifies registered observers on the start of the training."""
-        for observer in self._observers:
+        for observer in self._observers.values():
             observer.update_on_train_start()
 
     def notify_observers_on_epoch_start(self):
         """Notifies the observers on the start of each epoch."""
-        for observer in self._observers:
+        for observer in self._observers.values():
             observer.update_on_epoch_start()
 
     def notify_observers_on_batch_start(self):
         """Notifies the observers on the start of each mini-batch."""
-        for observer in self._observers:
+        for observer in self._observers.values():
             observer.update_on_batch_start()
 
     def notify_observers_on_batch_end(self):
         """Notifies the observers on the end of each mini-batch."""
-        for observer in self._observers:
+        for observer in self._observers.values():
             observer.update_on_batch_end()
 
     def notify_observers_on_epoch_end(self):
         """Notifies the observers on the end of each epoch."""
-        for observer in self._observers:
+        for observer in self._observers.values():
             observer.update_on_epoch_end()
 
     def notify_observers_on_train_end(self):
         """Notifies the observers on the end of the training."""
-        for observer in self._observers:
+        for observer in self._observers.values():
             observer.update_on_train_end()
 
     @property
