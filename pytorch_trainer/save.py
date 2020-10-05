@@ -4,11 +4,13 @@
 import torch
 import numpy as np
 import nibabel as nib
+import matplotlib.pyplot as plt
 from collections import namedtuple
 from pathlib import Path
 from queue import Queue
 from threading import Thread
 from enum import Enum
+from PIL import Image
 
 from .observer import Observer
 from .utils import NamedData
@@ -97,6 +99,8 @@ class SaveType(str, Enum):
 
     """
     NIFTI = 'nifti'
+    PNG = 'png'
+    PLOT = 'plot'
 
 
 class ImageType(str, Enum):
@@ -106,7 +110,7 @@ class ImageType(str, Enum):
         IMAGE: Just an image.
         SEG: The image is a segmentation.
         SEG_ACTIV: Apply activation (sigmoid) to the segmentation.
-    
+
     """
     IMAEG = 'image'
     SEG = 'seg'
@@ -122,22 +126,29 @@ def create_save_image(save_type, image_type):
 
     Returns:
         SaveImage: An instance of :class:`SaveImage`.
-        
+
     """
     save_type = SaveType(save_type)
     image_type = ImageType(image_type)
+
     if save_type is SaveType.NIFTI:
         save_image = SaveNifti()
+    elif save_type is SaveType.PNG:
+        save_image = SavePng()
+    elif save_type is SaveType.PLOT:
+        save_image = SavePlot()
+
     if image_type is ImageType.SEG:
         save_image = SaveSeg(save_image)
     elif image_type is ImageType.SEG_ACTIV:
         save_image = SaveSegActiv(save_image)
+
     return save_image
 
 
 class SaveImage:
-    """Writes images to dick.
-    
+    """Writes images to disk.
+
     """
     def save(self, filename, image):
         """Saves an image to filename.
@@ -145,14 +156,14 @@ class SaveImage:
         Args:
             filename (str or pathlib.Path): The filename to save.
             image (numpy.ndarray): The image to save.
-        
+
         """
         raise NotImeplementedError
 
 
 class SaveNifti(SaveImage):
     """Writes images as nifti files.
-    
+
     """
     def save(self, filename, image):
         filename = str(filename)
@@ -162,12 +173,42 @@ class SaveNifti(SaveImage):
         obj.to_filename(filename)
 
 
+class SavePng(SaveImage):
+    """Writes 2D images as .png files.
+
+    """
+    def save(self, filename, image):
+        filename = str(filename)
+        if not filename.endswith('.png'):
+            filename = filename + '.png'
+        image = image.squeeze().numpy()
+        image = (image - np.min(image)) / (np.max(image) - np.min(image)) * 255
+        obj = Image.fromarray(image.astype(np.uint8))
+        obj.save(filename)
+
+
+class SavePlot(SaveImage):
+    """Saves a 1D curve.
+
+    """
+    def save(self, filename, image):
+        filename = str(filename)
+        if not filename.endswith('.png'):
+            filename = filename + '.png'
+        image = image.squeeze().numpy()
+        plt.cla()
+        plt.plot(image)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.gcf().savefig(filename)
+
+
 class SaveSeg(SaveImage):
     """Saves a segmentation to file.
 
     Attributes:
         save_image (SaveImage): The instance to wrap around.
-    
+
     """
     def __init__(self, save_image):
         self.save_image = save_image
@@ -180,12 +221,12 @@ class SaveSeg(SaveImage):
         """Converts a probability map to segmentation."""
         if image.shape[0] > 1:
             image = torch.argmax(image, dim=0, keepdim=True)
-        return image 
+        return image
 
 
 class SaveSegActiv(SaveSeg):
     """Applies activation before saving the segmentation.
-    
+
     """
     def _convert_seg(self, image):
         if image.shape[0] > 1:
@@ -200,7 +241,7 @@ class ImageThread(Thread):
 
     Attributes:
         save_image (SaveImage): Save images to files.
-    
+
     """
     def __init__(self, save_image, queue):
         super().__init__()
