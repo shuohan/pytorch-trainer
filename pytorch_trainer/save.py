@@ -11,6 +11,7 @@ from queue import Queue
 from threading import Thread
 from enum import Enum
 from PIL import Image
+from torch.nn.functional import interpolate
 
 from .observer import Observer
 from .utils import NamedData
@@ -122,12 +123,13 @@ class ImageType(str, Enum):
     SOFTMAX = 'softmax'
 
 
-def create_save_image(save_type, image_type):
+def create_save_image(save_type, image_type, zoom=1):
     """Creates an instance of :class:`SaveImage`.
 
     Args:
         save_type (enum SaveType or str): The type of :class:`SaveImage`.
         image_type (enum ImageType or str): The type of image to save.
+        zoom (int): Enlarge the image by this factor.
 
     Returns:
         SaveImage: An instance of :class:`SaveImage`.
@@ -137,11 +139,11 @@ def create_save_image(save_type, image_type):
     image_type = ImageType(image_type)
 
     if save_type is SaveType.NIFTI:
-        save_image = SaveNifti()
+        save_image = SaveNifti(zoom=zoom)
     elif save_type is SaveType.PNG_NORM:
-        save_image = SavePngNorm()
+        save_image = SavePngNorm(zoom=zoom)
     elif save_type is SaveType.PNG:
-        save_image = SavePng()
+        save_image = SavePng(zoom=zoom)
     elif save_type is SaveType.PLOT:
         save_image = SavePlot()
 
@@ -158,16 +160,28 @@ def create_save_image(save_type, image_type):
 class SaveImage:
     """Writes images to disk.
 
+    Attributes:
+        zoom (int): Enlarge the image by this factor.
+
     """
+    def __init__(self, zoom=1):
+        self.zoom = zoom
+
     def save(self, filename, image):
         """Saves an image to filename.
 
         Args:
             filename (str or pathlib.Path): The filename to save.
-            image (numpy.ndarray): The image to save.
+            image (torch.Tensor): The image to save.
 
         """
         raise NotImeplementedError
+
+    def _enlarge(self, image):
+        image = image[None, ...]
+        image = interpolate(image, scale_factor=self.zoom, mode='nearest')
+        image = image.squeeze(dim=0)
+        return image
 
 
 class SaveNifti(SaveImage):
@@ -178,7 +192,8 @@ class SaveNifti(SaveImage):
         filename = str(filename)
         if not filename.endswith('.nii') and not filename.endswith('.nii.gz'):
             filename = filename + '.nii.gz'
-        obj = nib.Nifti1Image(image.numpy(), np.eye(4))
+        image = self._enlarge(image).squeeze().numpy()
+        obj = nib.Nifti1Image(image, np.eye(4))
         obj.to_filename(filename)
 
 
@@ -190,7 +205,7 @@ class SavePngNorm(SaveImage):
         filename = str(filename)
         if not filename.endswith('.png'):
             filename = filename + '.png'
-        image = image.squeeze().numpy()
+        image = self._enlarge(image).squeeze().numpy()
         image = (image - np.min(image)) / (np.max(image) - np.min(image)) * 255
         obj = Image.fromarray(image.astype(np.uint8))
         obj.save(filename)
@@ -204,7 +219,7 @@ class SavePng(SaveImage):
         filename = str(filename)
         if not filename.endswith('.png'):
             filename = filename + '.png'
-        image = image.squeeze().numpy() * 255
+        image = self._enlarge(image).squeeze().numpy() * 255
         obj = Image.fromarray(image.astype(np.uint8))
         obj.save(filename)
 
@@ -254,7 +269,7 @@ class SaveSigmoid(SaveSeg):
         return image
 
 
-class SaveSoftmax(SaveSoftmax):
+class SaveSoftmax(SaveSeg):
     """Applies softmax before saving the probability map.
 
     """
@@ -298,16 +313,18 @@ class ImageSaver(ThreadedSaver):
             `dirname/epoch-ind/batch-ind/sample-ind_name.ext``.
             ``"epoch/batch"`` saves the samples as
             ``dirname/epoch-ind/batch-ind_sample-ind_name.ext``.
+        zoom (int): Enlarge the image by this factor.
 
     """
     def __init__(self, dirname, attrs=[], step=10, save_type='nifti',
                  image_type='image', file_struct='epoch/batch/sample',
-                 save_init=False):
+                 save_init=False, zoom=1):
         self.save_type = save_type
         self.image_type = image_type
         self.attrs = attrs
         self.step = step
         self.file_struct = file_struct
+        self.zoom = zoom
         self._pattern = None
         super().__init__(dirname, save_init=save_init)
 
@@ -316,8 +333,8 @@ class ImageSaver(ThreadedSaver):
         super().update_on_train_start()
 
     def _init_thread(self):
-        save_image = create_save_image(self.save_type, self.image_type)
-        return ImageThread(save_image, self.queue)
+        save = create_save_image(self.save_type, self.image_type, self.zoom)
+        return ImageThread(save, self.queue)
 
     def _get_filename_pattern(self):
         epoch_pattern = 'epoch-%%0%dd' % len(str(self.subject.num_epochs))
