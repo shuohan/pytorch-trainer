@@ -384,6 +384,7 @@ class ImageSaver(ThreadedSaver):
                     self.queue.put(NamedData(filename, sample))
 
     def _get_filename(self, sample_ind, attr_ind, attr):
+        attr = attr.replace('_', '-')
         if self.ordered:
             return self._pattern % (self.subject.epoch_ind,
                                     self.subject.batch_ind,
