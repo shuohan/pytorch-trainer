@@ -102,6 +102,7 @@ class SaveType(str, Enum):
     """
     NIFTI = 'nifti'
     PNG = 'png'
+    PNG_NORM = 'png_norm'
     PLOT = 'plot'
 
 
@@ -111,12 +112,14 @@ class ImageType(str, Enum):
     Attributes:
         IMAGE: Just an image.
         SEG: The image is a segmentation.
-        SEG_ACTIV: Apply activation (sigmoid) to the segmentation.
+        SIGMOID: Apply sigmoid to the probability map.
+        SOFTMAX: Apply softmax to the probability map.
 
     """
     IMAEG = 'image'
     SEG = 'seg'
-    SEG_ACTIV = 'seg_activ'
+    SIGMOID = 'sigmoid'
+    SOFTMAX = 'softmax'
 
 
 def create_save_image(save_type, image_type):
@@ -135,6 +138,8 @@ def create_save_image(save_type, image_type):
 
     if save_type is SaveType.NIFTI:
         save_image = SaveNifti()
+    elif save_type is SaveType.PNG_NORM:
+        save_image = SavePngNorm()
     elif save_type is SaveType.PNG:
         save_image = SavePng()
     elif save_type is SaveType.PLOT:
@@ -142,8 +147,10 @@ def create_save_image(save_type, image_type):
 
     if image_type is ImageType.SEG:
         save_image = SaveSeg(save_image)
-    elif image_type is ImageType.SEG_ACTIV:
-        save_image = SaveSegActiv(save_image)
+    elif image_type is ImageType.SIGMOID:
+        save_image = SaveSigmoid(save_image)
+    elif image_type is ImageType.SOFTMAX:
+        save_image = SaveSoftmax(save_image)
 
     return save_image
 
@@ -175,8 +182,8 @@ class SaveNifti(SaveImage):
         obj.to_filename(filename)
 
 
-class SavePng(SaveImage):
-    """Writes 2D images as .png files.
+class SavePngNorm(SaveImage):
+    """Writes 2D images as .png files with intensity normalization.
 
     """
     def save(self, filename, image):
@@ -185,6 +192,19 @@ class SavePng(SaveImage):
             filename = filename + '.png'
         image = image.squeeze().numpy()
         image = (image - np.min(image)) / (np.max(image) - np.min(image)) * 255
+        obj = Image.fromarray(image.astype(np.uint8))
+        obj.save(filename)
+
+
+class SavePng(SaveImage):
+    """Assume the image is [0, 1].
+
+    """
+    def save(self, filename, image):
+        filename = str(filename)
+        if not filename.endswith('.png'):
+            filename = filename + '.png'
+        image = image.squeeze().numpy() * 255
         obj = Image.fromarray(image.astype(np.uint8))
         obj.save(filename)
 
@@ -206,7 +226,7 @@ class SavePlot(SaveImage):
 
 
 class SaveSeg(SaveImage):
-    """Saves a segmentation to file.
+    """Saves a segmentation to a file.
 
     Attributes:
         save_image (SaveImage): The instance to wrap around.
@@ -216,25 +236,30 @@ class SaveSeg(SaveImage):
         self.save_image = save_image
 
     def save(self, filename, image):
-        image = self._convert_seg(image)
+        image = self._convert(image)
         self.save_image.save(filename, image)
 
-    def _convert_seg(self, image):
-        """Converts a probability map to segmentation."""
-        if image.shape[0] > 1:
-            image = torch.argmax(image, dim=0, keepdim=True)
+    def _convert(self, image):
+        """Converts a soft probability map to hard segmentation."""
+        image = torch.argmax(image, dim=0, keepdim=False)
         return image
 
 
-class SaveSegActiv(SaveSeg):
-    """Applies activation before saving the segmentation.
+class SaveSigmoid(SaveSeg):
+    """Applies sigmoid before saving the probability map.
+
+    """
+    def _convert(self, image):
+        image = torch.sigmoid(image)
+        return image
+
+
+class SaveSoftmax(SaveSoftmax):
+    """Applies softmax before saving the probability map.
 
     """
     def _convert_seg(self, image):
-        if image.shape[0] > 1:
-            image = torch.argmax(image, dim=0, keepdim=True)
-        else:
-            image = torch.sigmoid(image)
+        image = torch.nn.functional.softmax(image, dim=0)
         return image
 
 
