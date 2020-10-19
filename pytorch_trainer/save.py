@@ -190,6 +190,7 @@ class SaveNifti(SaveImage):
     """
     def save(self, filename, image):
         filename = str(filename)
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         if not filename.endswith('.nii') and not filename.endswith('.nii.gz'):
             filename = filename + '.nii.gz'
         image = self._enlarge(image).squeeze().numpy()
@@ -203,6 +204,7 @@ class SavePngNorm(SaveImage):
     """
     def save(self, filename, image):
         filename = str(filename)
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         if not filename.endswith('.png'):
             filename = filename + '.png'
         image = self._enlarge(image).squeeze().numpy()
@@ -217,6 +219,7 @@ class SavePng(SaveImage):
     """
     def save(self, filename, image):
         filename = str(filename)
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         if not filename.endswith('.png'):
             filename = filename + '.png'
         image = self._enlarge(image).squeeze().numpy() * 255
@@ -230,6 +233,7 @@ class SavePlot(SaveImage):
     """
     def save(self, filename, image):
         filename = str(filename)
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         if not filename.endswith('.png'):
             filename = filename + '.png'
         image = image.squeeze().numpy()
@@ -314,17 +318,20 @@ class ImageSaver(ThreadedSaver):
             ``"epoch/batch"`` saves the samples as
             ``dirname/epoch-ind/batch-ind_sample-ind_name.ext``.
         zoom (int): Enlarge the image by this factor.
+        ordered (bool): Order the saved images according to :attr:`attrs`.
 
     """
     def __init__(self, dirname, attrs=[], step=10, save_type='nifti',
                  image_type='image', file_struct='epoch/batch/sample',
-                 save_init=False, zoom=1):
+                 save_init=False, zoom=1, ordered=False, prefix=''):
         self.save_type = save_type
         self.image_type = image_type
         self.attrs = attrs
         self.step = step
         self.file_struct = file_struct
         self.zoom = zoom
+        self.ordered = ordered
+        self.prefix = prefix
         self._pattern = None
         super().__init__(dirname, save_init=save_init)
 
@@ -347,6 +354,11 @@ class ImageSaver(ThreadedSaver):
         for ap in all_parts:
             sub_pattern = eval('_'.join([ap, 'pattern']))
             pattern = self._join_pattern(sub_pattern, pattern, ap in file_parts)
+        if self.ordered:
+            attr_pattern = '%%0%dd' % len(str(len(self.attrs)))
+            if len(self.prefix) > 0:
+                attr_pattern = '-'.join([self.prefix, attr_pattern])
+            pattern = self._join_pattern(attr_pattern, pattern, False)
         pattern = self._join_pattern('%s', pattern, False)
         return pattern
 
@@ -359,21 +371,24 @@ class ImageSaver(ThreadedSaver):
             self._save()
 
     def _save(self):
-        for attr in self.attrs:
+        for aind, attr in enumerate(self.attrs):
             batch = getattr(self.subject, attr)
             if isinstance(batch, NamedData):
-                for sample_ind, (name, sample) in enumerate(zip(*batch)):
-                    filename = self._get_filename(sample_ind + 1, attr)
+                for sind, (name, sample) in enumerate(zip(*batch)):
+                    filename = self._get_filename(sind + 1, aind + 1, attr)
                     filename = '_'.join([filename, name])
                     self.queue.put(NamedData(filename, sample))
             else:
-                for sample_ind, sample in enumerate(batch):
-                    filename = self._get_filename(sample_ind + 1, attr)
+                for sind, sample in enumerate(batch):
+                    filename = self._get_filename(sind + 1, aind + 1, attr)
                     self.queue.put(NamedData(filename, sample))
 
-    def _get_filename(self, sample_ind, name):
-        filename = self._pattern % (self.subject.epoch_ind,
+    def _get_filename(self, sample_ind, attr_ind, attr):
+        if self.ordered:
+            return self._pattern % (self.subject.epoch_ind,
                                     self.subject.batch_ind,
-                                    sample_ind, name)
-        Path(filename).parent.mkdir(parents=True, exist_ok=True)
-        return filename
+                                    sample_ind, attr_ind, attr)
+        else:
+            return self._pattern % (self.subject.epoch_ind,
+                                    self.subject.batch_ind,
+                                    sample_ind, attr)
