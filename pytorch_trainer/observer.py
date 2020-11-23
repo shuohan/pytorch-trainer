@@ -86,6 +86,16 @@ class Subject:
         observer.subject = self
         self._observers.append(observer)
 
+    def remove(self, observer):
+        """Removes an observer.
+
+        Args:
+            observer (Observer): The observer to remove. It has to be registered
+                before.
+
+        """
+        self._observers.remove(observer)
+
     def notify_observers_on_train_start(self):
         """Notifies registered observers on the start of the training."""
         for observer in self._observers:
@@ -120,7 +130,7 @@ class Subject:
     def num_epochs(self):
         """Returns the number of epochs."""
         raise NotImplementedError
-    
+
     @property
     def num_batches(self):
         """Returns the number batches per epoch."""

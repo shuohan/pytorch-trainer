@@ -99,11 +99,14 @@ class DataQueue(SubjectObserver):
         attrs (str or list[str]): The name(s) of the attribute(s) of the
             subject to monitor. When it is iterable, its length should match the
             shape of the data to add.
+        abbrs (str or list[str]): The abbreviation(s) of the attribute(s).
 
     """
-    def __init__(self, attrs):
+    def __init__(self, attrs, abbrs=None):
         super().__init__()
         self.attrs = attrs
+        self.abbrs = self.attrs if abbrs is None else abbrs
+        assert len(self.abbrs) == len(self.attrs)
         self._queue = None
 
     def update_on_train_start(self):
@@ -249,7 +252,7 @@ class BatchLogger(Logger):
     """
     def update_on_train_start(self):
         """Initializes the writer to log data."""
-        fields = self._append_data(['epoch', 'batch'], self.subject.attrs)
+        fields = self._append_data(['epoch', 'batch'], self.subject.abbrs)
         self._writer = Writer(self.filename, fields)
         self._writer.open()
 
@@ -266,7 +269,7 @@ class EpochLogger(Logger):
     """
     def update_on_train_start(self):
         """Initializes the writer to log data."""
-        fields = self._append_data(['epoch'], self.subject.attrs)
+        fields = self._append_data(['epoch'], self.subject.abbrs)
         self._writer = Writer(self.filename, fields)
         self._writer.open()
 
@@ -328,7 +331,7 @@ class EpochPrinter(Printer):
 
     def update_on_epoch_end(self):
         """Prints the progress message at the end of each epoch."""
-        attrs = self.subject.attrs
+        attrs = self.subject.abbrs
         data = self.subject.mean.tolist()
         line = [self._epoch_pattern % self.subject.epoch_ind]
         line = self._append_data(line, attrs, data)
@@ -353,7 +356,7 @@ class BatchEpochPrinter(EpochPrinter):
 
     def update_on_batch_end(self):
         """Prints the progress message at the end of each batch."""
-        attrs = self.subject.attrs
+        attrs = self.subject.abbrs
         data = self.subject.current.tolist()
         line = [self._epoch_pattern % self.subject.epoch_ind,
                 self._batch_pattern % self.subject.batch_ind]
